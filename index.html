@@ -399,7 +399,7 @@
         <div id="roleSection" class="section active">
             <h2 style="margin-bottom: 15px;">Select Player Role</h2>
             <div class="instruction-box">
-                👆 <strong>Step 1:</strong> Tap a role below to select it (it will turn purple)
+                👆 <strong>Step 1:</strong> Tap a role below to select it
             </div>
             <div class="selected-role-display" id="selectedRoleBox">
                 ✓ Selected: <span id="selectedRoleText"></span>
@@ -575,9 +575,21 @@
 
         const EFFECTIVENESS_THRESHOLD = 180;
 
+        // Player Tiers
+        const PLAYER_TIERS = {
+            "None": 0,
+            "Rare": 10,
+            "Elite": 30,
+            "Stellar": 50,
+            "Master": 80,
+            "Epic": 120,
+            "Legendary": 160
+        };
+
         // State
         let selectedRole = null;
         let playerStats = {};
+        let playerTier = "None";
 
         // Initialize role grid
         function initRoleGrid() {
@@ -624,6 +636,22 @@
             const whiteAttrs = new Set(ROLE_WHITES[selectedRole]);
 
             form.innerHTML = '';
+
+            // Add Player Tier selector
+            const tierGroup = document.createElement('div');
+            tierGroup.style.marginBottom = '20px';
+            tierGroup.innerHTML = `
+                <div class="form-group">
+                    <label style="font-size: 16px; color: #667eea;">⭐ Player Tier</label>
+                    <select id="playerTier" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px;">
+                        ${Object.keys(PLAYER_TIERS).map(tier =>
+                            `<option value="${tier}" ${tier === playerTier ? 'selected' : ''}>${tier} (+${PLAYER_TIERS[tier]})</option>`
+                        ).join('')}
+                    </select>
+                </div>
+            `;
+            form.appendChild(tierGroup);
+
             const grid = document.createElement('div');
             grid.className = 'attr-grid';
 
@@ -639,11 +667,26 @@
             });
 
             form.appendChild(grid);
+
+            // Add info box about tier
+            const infoBox = document.createElement('div');
+            infoBox.style.background = '#e7f3ff';
+            infoBox.style.border = '2px solid #2196F3';
+            infoBox.style.borderRadius = '8px';
+            infoBox.style.padding = '12px';
+            infoBox.style.marginTop = '15px';
+            infoBox.style.fontSize = '13px';
+            infoBox.style.color = '#0d47a1';
+            infoBox.innerHTML = '💡 <strong>Note:</strong> Enter the TOTAL values you see in the game (which includes the tier bonus). The tier bonus will be subtracted from WHITE attributes when calculating drill effectiveness (180 threshold).';
+            form.appendChild(infoBox);
         }
 
         function calculateRecommendations() {
             const attributes = selectedRole === 'GK' ? GK_ATTRIBUTES : REGULAR_ATTRIBUTES;
             let hasError = false;
+
+            // Get selected tier
+            playerTier = document.getElementById('playerTier').value;
 
             attributes.forEach(attr => {
                 const value = parseInt(document.getElementById(`attr_${attr}`).value);
@@ -704,11 +747,14 @@
             grayDrills.sort((a, b) => b.grayAvg - a.grayAvg);
 
             // Display summary
+            const tierBonus = PLAYER_TIERS[playerTier];
             const summaryBox = document.getElementById('summaryBox');
             summaryBox.innerHTML = `
                 <h3>📊 Summary</h3>
                 <div style="font-size: 14px; line-height: 1.8;">
-                    <div><strong>Effective Drills:</strong> ${whiteDrills.length + mixedDrills.length + grayDrills.length}</div>
+                    <div><strong>Player Tier:</strong> ${playerTier} (+${tierBonus} included in WHITE attributes)</div>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Tier bonus subtracted from calculation (base values used for 180 threshold)</div>
+                    <div style="margin-top: 10px;"><strong>Effective Drills:</strong> ${whiteDrills.length + mixedDrills.length + grayDrills.length}</div>
                     <div style="color: #28a745;">▪ White-only: ${whiteDrills.length}</div>
                     <div style="color: #ffc107;">▪ Mixed: ${mixedDrills.length}</div>
                     <div style="color: #6c757d;">▪ Gray-only: ${grayDrills.length}</div>
@@ -751,13 +797,16 @@
             const grayInDrill = [];
             const whiteValues = [];
             const grayValues = [];
+            const tierBonus = PLAYER_TIERS[playerTier];
 
             drillAttrs.forEach(attr => {
                 if (!(attr in playerStats)) return;
 
                 if (whiteAttrs.has(attr)) {
                     whiteInDrill.push(attr);
-                    whiteValues.push(playerStats[attr]);
+                    // Subtract tier bonus from white attributes for calculation
+                    const baseValue = playerStats[attr] - tierBonus;
+                    whiteValues.push(baseValue);
                 } else {
                     grayInDrill.push(attr);
                     grayValues.push(playerStats[attr]);
@@ -816,6 +865,22 @@
             const whiteAttrs = new Set(ROLE_WHITES[selectedRole]);
 
             form.innerHTML = '';
+
+            // Add Player Tier selector
+            const tierGroup = document.createElement('div');
+            tierGroup.style.marginBottom = '20px';
+            tierGroup.innerHTML = `
+                <div class="form-group">
+                    <label style="font-size: 16px; color: #667eea;">⭐ Player Tier</label>
+                    <select id="updatePlayerTier" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px;">
+                        ${Object.keys(PLAYER_TIERS).map(tier =>
+                            `<option value="${tier}" ${tier === playerTier ? 'selected' : ''}>${tier} (+${PLAYER_TIERS[tier]})</option>`
+                        ).join('')}
+                    </select>
+                </div>
+            `;
+            form.appendChild(tierGroup);
+
             const grid = document.createElement('div');
             grid.className = 'attr-grid';
 
@@ -838,6 +903,13 @@
             const attributes = selectedRole === 'GK' ? GK_ATTRIBUTES : REGULAR_ATTRIBUTES;
             let updated = false;
 
+            // Update tier
+            const newTier = document.getElementById('updatePlayerTier').value;
+            if (newTier !== playerTier) {
+                playerTier = newTier;
+                updated = true;
+            }
+
             attributes.forEach(attr => {
                 const input = document.getElementById(`update_${attr}`);
                 const value = input.value.trim();
@@ -854,7 +926,7 @@
                 showSection('recommendationsSection');
                 displayRecommendations();
             } else {
-                alert('No changes made. Enter at least one new value.');
+                alert('No changes made. Enter at least one new value or change tier.');
             }
         }
 
@@ -865,12 +937,24 @@
             const display = document.getElementById('attributesDisplay');
             const attributes = selectedRole === 'GK' ? GK_ATTRIBUTES : REGULAR_ATTRIBUTES;
             const whiteAttrs = new Set(ROLE_WHITES[selectedRole]);
+            const tierBonus = PLAYER_TIERS[playerTier];
 
             let html = '<div class="attributes-display">';
+
+            // Show tier info
+            if (tierBonus > 0) {
+                html += `<div style="background: #e7f3ff; border: 2px solid #2196F3; border-radius: 8px; padding: 12px; margin-bottom: 15px; font-size: 14px; color: #0d47a1;">
+                    <strong>Player Tier:</strong> ${playerTier} (+${tierBonus} bonus included in WHITE attributes)
+                </div>`;
+            }
+
             html += '<h4>⭐ WHITE (Primary) Attributes</h4>';
             attributes.forEach(attr => {
                 if (whiteAttrs.has(attr)) {
-                    html += `<div class="attr-item white"><span>${attr}</span><strong>${playerStats[attr]}</strong></div>`;
+                    const totalValue = playerStats[attr];
+                    const baseValue = totalValue - tierBonus;
+                    const bonusText = tierBonus > 0 ? ` <span style="color: #2196F3; font-size: 12px;">(${baseValue} base + ${tierBonus})</span>` : '';
+                    html += `<div class="attr-item white"><span>${attr}</span><strong>${totalValue}${bonusText}</strong></div>`;
                 }
             });
 
@@ -893,6 +977,7 @@
             showSection('roleSection');
             selectedRole = null;
             playerStats = {};
+            playerTier = "None";
             document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('selected'));
             document.getElementById('selectedRoleBox').classList.remove('show');
         }
