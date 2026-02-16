@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Training Optimizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .section {
+            padding: 20px;
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .instruction-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #856404;
+        }
+
+        .selected-role-display {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 600;
+            color: #155724;
+            display: none;
+        }
+
+        .selected-role-display.show {
+            display: block;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 24px;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            font-weight: 600;
+            transition: all 0.3s;
+            touch-action: manipulation;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+            opacity: 0.9;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .role-btn {
+            padding: 15px 8px;
+            background: #f8f9fa;
+            border: 3px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 14px;
+            touch-action: manipulation;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .role-btn:active {
+            transform: scale(0.95);
+        }
+
+        .role-btn.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transform: scale(1.05);
+        }
+
+        .drill-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .drill-card.white {
+            border-left-color: #28a745;
+            background: #f1f9f3;
+        }
+
+        .drill-card.mixed {
+            border-left-color: #ffc107;
+            background: #fffbf0;
+        }
+
+        .drill-card.gray {
+            border-left-color: #6c757d;
+            background: #f5f5f5;
+        }
+
+        .drill-card h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .drill-stats {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .drill-attrs {
+            font-size: 13px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .badge-difficulty {
+            background: #667eea;
+            color: white;
+        }
+
+        .priority-section {
+            margin-bottom: 30px;
+        }
+
+        .priority-header {
+            background: #667eea;
+            color: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .priority-header.white {
+            background: #28a745;
+        }
+
+        .priority-header.mixed {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .priority-header.gray {
+            background: #6c757d;
+        }
+
+        .attr-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .summary-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .summary-box h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .attributes-display {
+            margin-bottom: 20px;
+        }
+
+        .attributes-display h4 {
+            font-size: 14px;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .attr-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .attr-item.white {
+            background: #f1f9f3;
+            border-left: 3px solid #28a745;
+        }
+
+        .attr-item.gray {
+            background: #f5f5f5;
+            border-left: 3px solid #6c757d;
+        }
+
+        .no-drills {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        @media (max-width: 600px) {
+            .attr-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .role-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚽ Football Training Optimizer</h1>
+            <p>Find the best drills for your player</p>
+        </div>
+
+        <!-- Role Selection Section -->
+        <div id="roleSection" class="section active">
+            <h2 style="margin-bottom: 15px;">Select Player Role</h2>
+            <div class="instruction-box">
+                👆 <strong>Step 1:</strong> Tap a role below to select it (it will turn purple)
+            </div>
+            <div class="selected-role-display" id="selectedRoleBox">
+                ✓ Selected: <span id="selectedRoleText"></span>
+            </div>
+            <div id="roleGrid" class="role-grid"></div>
+            <button class="btn" id="continueBtn" onclick="continueToAttributes()">Continue →</button>
+        </div>
+
+        <!-- Attributes Input Section -->
+        <div id="attributesSection" class="section">
+            <h2 style="margin-bottom: 15px;">Enter Player Attributes</h2>
+            <p style="margin-bottom: 20px; color: #666;">Role: <strong id="selectedRoleName"></strong></p>
+            <div class="instruction-box">
+                ⭐ = Important (WHITE) attributes for this role
+            </div>
+            <div id="attributesForm"></div>
+            <button class="btn" onclick="calculateRecommendations()">Get Recommendations ⚡</button>
+            <button class="btn btn-secondary" onclick="backToRoles()">← Back</button>
+        </div>
+
+        <!-- Recommendations Section -->
+        <div id="recommendationsSection" class="section">
+            <h2 style="margin-bottom: 15px;">Training Recommendations</h2>
+            <p style="margin-bottom: 20px; color: #666;">Role: <strong id="recRoleName"></strong></p>
+
+            <div class="summary-box" id="summaryBox"></div>
+
+            <div id="recommendationsList"></div>
+
+            <div class="action-buttons">
+                <button class="btn btn-success" onclick="updateAttributes()">Update Attributes</button>
+                <button class="btn btn-secondary" onclick="viewAttributes()">View Attributes</button>
+            </div>
+            <button class="btn" onclick="backToRoles()" style="margin-top: 10px;">← Start Over</button>
+        </div>
+
+        <!-- View Attributes Section -->
+        <div id="viewAttributesSection" class="section">
+            <h2 style="margin-bottom: 15px;">Current Attributes</h2>
+            <p style="margin-bottom: 20px; color: #666;">Role: <strong id="viewRoleName"></strong></p>
+            <div id="attributesDisplay"></div>
+            <button class="btn" onclick="backToRecommendations()">← Back to Recommendations</button>
+        </div>
+
+        <!-- Update Attributes Section -->
+        <div id="updateSection" class="section">
+            <h2 style="margin-bottom: 15px;">Update Player Attributes</h2>
+            <div class="instruction-box">
+                Enter new values after training. Leave blank to keep current value.
+            </div>
+            <div id="updateForm"></div>
+            <button class="btn btn-success" onclick="saveUpdates()">Save & Recalculate ⚡</button>
+            <button class="btn btn-secondary" onclick="backToRecommendations()">← Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // Game data
+        const REGULAR_ATTRIBUTES = [
+            "Tackling", "Marking", "Positioning", "Heading", "Bravery",
+            "Passing", "Dribbling", "Crossing", "Shooting", "Finishing",
+            "Fitness", "Strength", "Aggression", "Speed", "Creativity"
+        ];
+
+        const GK_ATTRIBUTES = [
+            "Fitness", "Strength", "Aggression", "Speed", "Creativity",
+            "Reflexes", "Agility", "Anticipation", "Rushing out", "Communication",
+            "Throwing", "Kicking", "Punching", "Aerial reach", "Concentration"
+        ];
+
+        const ROLE_WHITES = {
+            "GK": ["Reflexes", "Agility", "Anticipation", "Rushing out", "Communication", "Throwing", "Kicking", "Punching", "Aerial reach", "Concentration", "Fitness"],
+            "DL": ["Tackling", "Marking", "Positioning", "Bravery", "Crossing", "Fitness", "Aggression", "Speed"],
+            "DC": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Fitness", "Strength", "Aggression"],
+            "DR": ["Tackling", "Marking", "Positioning", "Bravery", "Crossing", "Fitness", "Aggression", "Speed"],
+            "DMC": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Passing", "Fitness", "Strength", "Aggression", "Creativity"],
+            "ML": ["Positioning", "Passing", "Dribbling", "Crossing", "Fitness", "Speed", "Creativity"],
+            "MC": ["Tackling", "Marking", "Positioning", "Bravery", "Passing", "Dribbling", "Shooting", "Fitness", "Speed", "Creativity"],
+            "MR": ["Positioning", "Passing", "Dribbling", "Crossing", "Fitness", "Speed", "Creativity"],
+            "AML": ["Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Speed", "Creativity"],
+            "AMC": ["Heading", "Passing", "Dribbling", "Shooting", "Finishing", "Fitness", "Speed", "Creativity"],
+            "AMR": ["Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Speed", "Creativity"],
+            "ST": ["Positioning", "Heading", "Passing", "Dribbling", "Shooting", "Finishing", "Strength", "Speed", "Creativity"],
+            "DC + DL": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Crossing", "Fitness", "Strength", "Aggression", "Speed"],
+            "DC + DR": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Crossing", "Fitness", "Strength", "Aggression", "Speed"],
+            "DC + DMC": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Passing", "Fitness", "Strength", "Aggression", "Creativity"],
+            "DL + ML": ["Tackling", "Marking", "Positioning", "Bravery", "Passing", "Dribbling", "Crossing", "Fitness", "Aggression", "Speed", "Creativity"],
+            "DR + MR": ["Tackling", "Marking", "Positioning", "Bravery", "Passing", "Dribbling", "Crossing", "Fitness", "Aggression", "Speed", "Creativity"],
+            "DMC + MC": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Passing", "Dribbling", "Shooting", "Fitness", "Strength", "Aggression", "Speed", "Creativity"],
+            "MC + ML": ["Tackling", "Marking", "Positioning", "Bravery", "Passing", "Dribbling", "Crossing", "Shooting", "Fitness", "Speed", "Creativity"],
+            "MC + MR": ["Tackling", "Marking", "Positioning", "Bravery", "Passing", "Dribbling", "Crossing", "Shooting", "Fitness", "Speed", "Creativity"],
+            "MC + AMC": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Passing", "Dribbling", "Shooting", "Finishing", "Fitness", "Speed", "Creativity"],
+            "ML + AML": ["Positioning", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Speed", "Creativity"],
+            "MR + AMR": ["Positioning", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Speed", "Creativity"],
+            "AMC + AML": ["Heading", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Speed", "Creativity"],
+            "AMC + AMR": ["Heading", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Speed", "Creativity"],
+            "AMC + ST": ["Positioning", "Heading", "Passing", "Dribbling", "Shooting", "Finishing", "Fitness", "Strength", "Speed", "Creativity"],
+            "AML + ST": ["Positioning", "Heading", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Strength", "Speed", "Creativity"],
+            "AMR + ST": ["Positioning", "Heading", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Strength", "Speed", "Creativity"],
+            "DL + DC + DR": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Crossing", "Fitness", "Strength", "Aggression", "Speed"],
+            "DL + DC + DMC": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Passing", "Crossing", "Fitness", "Strength", "Aggression", "Speed", "Creativity"],
+            "DL + DC + ML": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Passing", "Dribbling", "Crossing", "Fitness", "Strength", "Aggression", "Speed", "Creativity"],
+            "DL + ML + AML": ["Tackling", "Marking", "Positioning", "Bravery", "Passing", "Crossing", "Shooting", "Finishing", "Fitness", "Aggression", "Speed", "Creativity"],
+            "DR + DC + DMC": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Passing", "Crossing", "Fitness", "Strength", "Aggression", "Speed", "Creativity"],
+            "DR + DC + MR": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Passing", "Dribbling", "Crossing", "Fitness", "Strength", "Aggression", "Speed", "Creativity"],
+            "DR + MR + AMR": ["Tackling", "Marking", "Positioning", "Bravery", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Aggression", "Speed", "Creativity"],
+            "DC + DL + DMC": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Passing", "Crossing", "Fitness", "Strength", "Aggression", "Speed", "Creativity"],
+            "DC + DR + DMC": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Passing", "Crossing", "Fitness", "Strength", "Aggression", "Speed", "Creativity"],
+            "DC + DMC + MC": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Passing", "Dribbling", "Shooting", "Fitness", "Strength", "Aggression", "Speed", "Creativity"],
+            "DMC + MC + ML": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Passing", "Dribbling", "Crossing", "Shooting", "Fitness", "Strength", "Aggression", "Speed", "Creativity"],
+            "DMC + MC + MR": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Passing", "Dribbling", "Crossing", "Shooting", "Fitness", "Strength", "Aggression", "Speed", "Creativity"],
+            "MC + ML + AML": ["Tackling", "Marking", "Positioning", "Bravery", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Speed", "Creativity"],
+            "MC + MR + AMR": ["Tackling", "Marking", "Positioning", "Bravery", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Speed", "Creativity"],
+            "MC + AML + AMC": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Speed", "Creativity"],
+            "MC + AMC + AMR": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Speed", "Creativity"],
+            "MC + AMC + ST": ["Tackling", "Marking", "Positioning", "Heading", "Bravery", "Passing", "Dribbling", "Shooting", "Finishing", "Fitness", "Strength", "Speed", "Creativity"],
+            "ML + AML + AMC": ["Positioning", "Heading", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Speed", "Creativity"],
+            "ML + AML + ST": ["Positioning", "Heading", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Strength", "Speed", "Creativity"],
+            "MR + AMR + AMC": ["Positioning", "Heading", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Speed", "Creativity"],
+            "MR + AMR + ST": ["Positioning", "Heading", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Strength", "Speed", "Creativity"],
+            "AML + AMC + AMR": ["Heading", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Speed", "Creativity"],
+            "AML + AMC + ST": ["Positioning", "Heading", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Strength", "Speed", "Creativity"],
+            "AMR + AMC + ST": ["Positioning", "Heading", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Strength", "Speed", "Creativity"],
+            "AML + ST + AMR": ["Positioning", "Heading", "Passing", "Dribbling", "Crossing", "Shooting", "Finishing", "Fitness", "Strength", "Speed", "Creativity"]
+        };
+
+        const DRILLS = [
+            ["1-on-1 Finishing", ["Tackling", "Anticipation", "Finishing", "Dribbling", "Rushing out"], "EASY"],
+            ["Pass, Go and Shoot!", ["Anticipation", "Speed", "Shooting", "Passing"], "EASY"],
+            ["Set-Piece Delivery", ["Crossing", "Rushing out", "Heading", "Shooting", "Marking"], "MEDIUM"],
+            ["Shooting Technique", ["Agility", "Reflexes", "Finishing", "Strength", "Shooting"], "MEDIUM"],
+            ["Slalom Dribble", ["Speed", "Dribbling", "Fitness", "Passing"], "HARD"],
+            ["Wing Play", ["Crossing", "Punching", "Finishing", "Heading", "Shooting"], "HARD"],
+            ["Fast Counter-Attacks", ["Crossing", "Finishing", "Passing", "Creativity", "Communication"], "VERY HARD"],
+            ["Video Analysis", ["Bravery", "Creativity", "Communication", "Positioning"], "VERY EASY"],
+            ["Use Your Head", ["Creativity", "Passing", "Heading", "Positioning"], "EASY"],
+            ["One Line of Defense", ["Concentration", "Communication", "Marking", "Positioning"], "MEDIUM"],
+            ["Stop the Attacker", ["Tackling", "Bravery", "Dribbling", "Strength", "Marking"], "MEDIUM"],
+            ["Defending Crosses", ["Crossing", "Bravery", "Heading", "Aerial reach", "Marking"], "MEDIUM"],
+            ["Press the Play", ["Tackling", "Bravery", "Positioning", "Aggression", "Marking"], "HARD"],
+            ["Goalkeeper Training", ["Kicking", "Agility", "Reflexes", "Throwing", "Aerial reach"], "HARD"],
+            ["Warm-Up", ["Fitness", "Reflexes", "Heading", "Aggression"], "VERY EASY"],
+            ["Stretch", ["Speed", "Agility", "Fitness", "Strength"], "EASY"],
+            ["Carioca with Ladders", ["Speed", "Agility", "Concentration", "Aggression"], "EASY"],
+            ["Long Run", ["Fitness", "Speed", "Concentration"], "MEDIUM"],
+            ["Shuttle Runs", ["Speed", "Bravery", "Agility", "Strength"], "HARD"],
+            ["Hurdle Jumps", ["Speed", "Bravery", "Kicking", "Aggression"], "HARD"],
+            ["Gym", ["Fitness", "Kicking", "Throwing", "Strength"], "VERY HARD"],
+            ["Sprint", ["Speed", "Dribbling", "Fitness", "Rushing out"], "VERY HARD"],
+            ["Ball Control", ["Dribbling", "Creativity", "Concentration", "Heading"], "VERY EASY"],
+            ["Piggy in the Middle", ["Tackling", "Fitness", "Positioning", "Passing", "Aggression"], "EASY"],
+            ["First Touch Play", ["Dribbling", "Fitness", "Passing", "Throwing"], "EASY"],
+            ["Rapid Side Switch", ["Positioning", "Creativity", "Communication", "Crossing", "Passing", "Speed"], "MEDIUM"],
+            ["Stay in Lane", ["Speed", "Fitness", "Aerial reach", "Positioning"], "MEDIUM"],
+            ["Contact Play", ["Bravery", "Dribbling", "Strength", "Aggression", "Marking"], "MEDIUM"],
+            ["Passes Before Shot", ["Anticipation", "Finishing", "Positioning", "Passing", "Creativity"], "HARD"]
+        ];
+
+        const EFFECTIVENESS_THRESHOLD = 180;
+
+        // State
+        let selectedRole = null;
+        let playerStats = {};
+
+        // Initialize role grid
+        function initRoleGrid() {
+            const roleGrid = document.getElementById('roleGrid');
+            const roles = Object.keys(ROLE_WHITES);
+
+            roles.forEach(role => {
+                const btn = document.createElement('div');
+                btn.className = 'role-btn';
+                btn.textContent = role;
+                btn.onclick = () => selectRole(role);
+                roleGrid.appendChild(btn);
+            });
+        }
+
+        function selectRole(role) {
+            selectedRole = role;
+
+            // Update visual selection
+            document.querySelectorAll('.role-btn').forEach(btn => {
+                btn.classList.remove('selected');
+                if (btn.textContent === role) {
+                    btn.classList.add('selected');
+                }
+            });
+
+            // Show selected role box
+            document.getElementById('selectedRoleBox').classList.add('show');
+            document.getElementById('selectedRoleText').textContent = role;
+        }
+
+        function continueToAttributes() {
+            if (!selectedRole) {
+                alert('⚠️ Please select a role first!\n\nTap on one of the role buttons (like ST, GK, DC, etc.) to select it.');
+                return;
+            }
+
+            showSection('attributesSection');
+            document.getElementById('selectedRoleName').textContent = selectedRole;
+            initAttributesForm();
+        }
+
+        function initAttributesForm() {
+            const form = document.getElementById('attributesForm');
+            const attributes = selectedRole === 'GK' ? GK_ATTRIBUTES : REGULAR_ATTRIBUTES;
+            const whiteAttrs = new Set(ROLE_WHITES[selectedRole]);
+
+            form.innerHTML = '';
+            const grid = document.createElement('div');
+            grid.className = 'attr-grid';
+
+            attributes.forEach(attr => {
+                const isWhite = whiteAttrs.has(attr);
+                const formGroup = document.createElement('div');
+                formGroup.className = 'form-group';
+                formGroup.innerHTML = `
+                    <label>${attr} ${isWhite ? '⭐' : ''}</label>
+                    <input type="number" id="attr_${attr}" min="0" value="${playerStats[attr] || 100}" required>
+                `;
+                grid.appendChild(formGroup);
+            });
+
+            form.appendChild(grid);
+        }
+
+        function calculateRecommendations() {
+            // Get attributes from form
+            const attributes = selectedRole === 'GK' ? GK_ATTRIBUTES : REGULAR_ATTRIBUTES;
+            let hasError = false;
+
+            attributes.forEach(attr => {
+                const value = parseInt(document.getElementById(`attr_${attr}`).value);
+                if (isNaN(value) || value < 0) {
+                    alert(`Please enter a valid value for ${attr}`);
+                    hasError = true;
+                    return;
+                }
+                playerStats[attr] = value;
+            });
+
+            if (hasError) return;
+
+            showSection('recommendationsSection');
+            document.getElementById('recRoleName').textContent = selectedRole;
+            displayRecommendations();
+        }
+
+        function displayRecommendations() {
+            const whiteAttrs = new Set(ROLE_WHITES[selectedRole]);
+            const whiteDrills = [];
+            const mixedDrills = [];
+            const grayDrills = [];
+            const ineffective = [];
+
+            DRILLS.forEach(([name, attrs, difficulty]) => {
+                const analysis = analyzeDrill(attrs, whiteAttrs);
+                if (!analysis.overallAvg) return;
+
+                const drill = {
+                    name, attrs, difficulty,
+                    ...analysis,
+                    potential: EFFECTIVENESS_THRESHOLD - analysis.overallAvg
+                };
+
+                if (analysis.overallAvg >= EFFECTIVENESS_THRESHOLD) {
+                    ineffective.push(drill);
+                } else if (analysis.whiteAttrs.length > 0 && analysis.grayAttrs.length === 0) {
+                    whiteDrills.push(drill);
+                } else if (analysis.grayAttrs.length > 0 && analysis.whiteAttrs.length === 0) {
+                    grayDrills.push(drill);
+                } else {
+                    mixedDrills.push(drill);
+                }
+            });
+
+            // Sort
+            whiteDrills.sort((a, b) => a.whiteAvg - b.whiteAvg);
+            mixedDrills.sort((a, b) => {
+                if (b.whiteAttrs.length !== a.whiteAttrs.length) {
+                    return b.whiteAttrs.length - a.whiteAttrs.length;
+                }
+                if (a.whiteAvg !== b.whiteAvg) {
+                    return a.whiteAvg - b.whiteAvg;
+                }
+                return b.grayAvg - a.grayAvg;
+            });
+            grayDrills.sort((a, b) => b.grayAvg - a.grayAvg);
+
+            // Display summary
+            const summaryBox = document.getElementById('summaryBox');
+            summaryBox.innerHTML = `
+                <h3>📊 Summary</h3>
+                <div style="font-size: 14px; line-height: 1.8;">
+                    <div><strong>Effective Drills:</strong> ${whiteDrills.length + mixedDrills.length + grayDrills.length}</div>
+                    <div style="color: #28a745;">▪ White-only: ${whiteDrills.length}</div>
+                    <div style="color: #ffc107;">▪ Mixed: ${mixedDrills.length}</div>
+                    <div style="color: #6c757d;">▪ Gray-only: ${grayDrills.length}</div>
+                    <div style="margin-top: 10px;"><strong>Ineffective:</strong> ${ineffective.length}</div>
+                </div>
+            `;
+
+            // Display drills
+            const list = document.getElementById('recommendationsList');
+            list.innerHTML = '';
+
+            if (whiteDrills.length > 0) {
+                list.innerHTML += '<div class="priority-header white">⭐ Priority 1: WHITE Attributes Only</div>';
+                whiteDrills.forEach(drill => list.appendChild(createDrillCard(drill, 'white')));
+            }
+
+            if (mixedDrills.length > 0) {
+                list.innerHTML += '<div class="priority-header mixed">⚡ Priority 2: Mixed (White + Gray)</div>';
+                mixedDrills.forEach(drill => list.appendChild(createDrillCard(drill, 'mixed')));
+            }
+
+            if (grayDrills.length > 0) {
+                list.innerHTML += '<div class="priority-header gray">◾ Priority 3: GRAY Attributes Only</div>';
+                grayDrills.forEach(drill => list.appendChild(createDrillCard(drill, 'gray')));
+            }
+
+            if (whiteDrills.length === 0 && mixedDrills.length === 0 && grayDrills.length === 0) {
+                list.innerHTML = '<div class="no-drills">✓ All drills are ineffective!<br>Player is highly trained.</div>';
+            }
+        }
+
+        function analyzeDrill(drillAttrs, whiteAttrs) {
+            const whiteInDrill = [];
+            const grayInDrill = [];
+            const whiteValues = [];
+            const grayValues = [];
+
+            drillAttrs.forEach(attr => {
+                if (!(attr in playerStats)) return;
+
+                if (whiteAttrs.has(attr)) {
+                    whiteInDrill.push(attr);
+                    whiteValues.push(playerStats[attr]);
+                } else {
+                    grayInDrill.push(attr);
+                    grayValues.push(playerStats[attr]);
+                }
+            });
+
+            const whiteAvg = whiteValues.length > 0 ? whiteValues.reduce((a, b) => a + b, 0) / whiteValues.length : null;
+            const grayAvg = grayValues.length > 0 ? grayValues.reduce((a, b) => a + b, 0) / grayValues.length : null;
+            const allValues = [...whiteValues, ...grayValues];
+            const overallAvg = allValues.length > 0 ? allValues.reduce((a, b) => a + b, 0) / allValues.length : null;
+
+            return { whiteAttrs: whiteInDrill, grayAttrs: grayInDrill, whiteAvg, grayAvg, overallAvg };
+        }
+
+        function createDrillCard(drill, type) {
+            const card = document.createElement('div');
+            card.className = `drill-card ${type}`;
+
+            let statsHtml = '';
+            if (type === 'white') {
+                statsHtml = `White Avg: ${drill.whiteAvg.toFixed(1)} | Potential: +${drill.potential.toFixed(1)}`;
+            } else if (type === 'mixed') {
+                const whiteStr = drill.whiteAvg ? `White: ${drill.whiteAvg.toFixed(1)}` : '';
+                const grayStr = drill.grayAvg ? `Gray: ${drill.grayAvg.toFixed(1)}` : '';
+                statsHtml = `${whiteStr} | ${grayStr} | Overall: ${drill.overallAvg.toFixed(1)}`;
+            } else {
+                statsHtml = `Gray Avg: ${drill.grayAvg.toFixed(1)} | Overall: ${drill.overallAvg.toFixed(1)}`;
+            }
+
+            let attrsHtml = '';
+            if (type === 'white') {
+                attrsHtml = `→ ${drill.whiteAttrs.join(', ')}`;
+            } else if (type === 'mixed') {
+                attrsHtml = `<div>→ WHITE: ${drill.whiteAttrs.join(', ')}</div><div>→ GRAY: ${drill.grayAttrs.join(', ')}</div>`;
+            } else {
+                attrsHtml = `→ ${drill.grayAttrs.join(', ')}`;
+            }
+
+            card.innerHTML = `
+                <h3>${drill.name} <span class="badge badge-difficulty">${drill.difficulty}</span></h3>
+                <div class="drill-stats">${statsHtml}</div>
+                <div class="drill-attrs">${attrsHtml}</div>
+            `;
+
+            return card;
+        }
+
+        function updateAttributes() {
+            showSection('updateSection');
+            const form = document.getElementById('updateForm');
+            const attributes = selectedRole === 'GK' ? GK_ATTRIBUTES : REGULAR_ATTRIBUTES;
+            const whiteAttrs = new Set(ROLE_WHITES[selectedRole]);
+
+            form.innerHTML = '';
+            const grid = document.createElement('div');
+            grid.className = 'attr-grid';
+
+            attributes.forEach(attr => {
+                const isWhite = whiteAttrs.has(attr);
+                const current = playerStats[attr];
+                const formGroup = document.createElement('div');
+                formGroup.className = 'form-group';
+                formGroup.innerHTML = `
+                    <label>${attr} ${isWhite ? '⭐' : ''} <span style="color: #999; font-size: 12px;">(${current})</span></label>
+                    <input type="number" id="update_${attr}" min="0" placeholder="Leave blank = ${current}">
+                `;
+                grid.appendChild(formGroup);
+            });
+
+            form.appendChild(grid);
+        }
+
+        function saveUpdates() {
+            const attributes = selectedRole === 'GK' ? GK_ATTRIBUTES : REGULAR_ATTRIBUTES;
+            let updated = false;
+
+            attributes.forEach(attr => {
+                const input = document.getElementById(`update_${attr}`);
+                const value = input.value.trim();
+                if (value !== '') {
+                    const num = parseInt(value);
+                    if (!isNaN(num) && num >= 0) {
+                        playerStats[attr] = num;
+                        updated = true;
+                    }
+                }
+            });
+
+            if (updated) {
+                showSection('recommendationsSection');
+                displayRecommendations();
+            } else {
+                alert('No changes made. Enter at least one new value.');
+            }
+        }
+
+        function viewAttributes() {
+            showSection('viewAttributesSection');
+            document.getElementById('viewRoleName').textContent = selectedRole;
+
+            const display = document.getElementById('attributesDisplay');
+            const attributes = selectedRole === 'GK' ? GK_ATTRIBUTES : REGULAR_ATTRIBUTES;
+            const whiteAttrs = new Set(ROLE_WHITES[selectedRole]);
+
+            let html = '<div class="attributes-display">';
+            html += '<h4>⭐ WHITE (Primary) Attributes</h4>';
+            attributes.forEach(attr => {
+                if (whiteAttrs.has(attr)) {
+                    html += `<div class="attr-item white"><span>${attr}</span><strong>${playerStats[attr]}</strong></div>`;
+                }
+            });
+
+            html += '<h4 style="margin-top: 20px;">◾ GRAY (Secondary) Attributes</h4>';
+            attributes.forEach(attr => {
+                if (!whiteAttrs.has(attr)) {
+                    html += `<div class="attr-item gray"><span>${attr}</span><strong>${playerStats[attr]}</strong></div>`;
+                }
+            });
+            html += '</div>';
+
+            display.innerHTML = html;
+        }
+
+        function backToRecommendations() {
+            showSection('recommendationsSection');
+        }
+
+        function backToRoles() {
+            showSection('roleSection');
+            selectedRole = null;
+            playerStats = {};
+            document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('selected'));
+            document.getElementById('selectedRoleBox').classList.remove('show');
+        }
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(sectionId).classList.add('active');
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        // Initialize on load
+        initRoleGrid();
+    </script>
+</body>
+</html>
