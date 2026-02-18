@@ -568,6 +568,11 @@
                 saveBtn: 'שמור וחשב מחדש ⚡',
                 cancelBtn: '→ בטל',
 
+                // Overall Rating
+                overallRating: 'איכות כללית',
+                overallBase: 'בסיס (ללא בונוס):',
+                overallWithBonus: 'עם בונוס דרגה:',
+
                 // Drill stats
                 whiteAvg: 'ממוצע לבן:',
                 grayAvg: 'ממוצע אפור:',
@@ -708,6 +713,11 @@
                 updateInstruction: 'Enter new values after training. Leave blank to keep current value.',
                 saveBtn: 'Save & Recalculate ⚡',
                 cancelBtn: '← Cancel',
+
+                // Overall Rating
+                overallRating: 'Overall Rating',
+                overallBase: 'Base (no tier):',
+                overallWithBonus: 'With tier bonus:',
 
                 // Drill stats
                 whiteAvg: 'White Avg:',
@@ -1120,12 +1130,21 @@
             grayDrills.sort((a, b) => b.grayAvg - a.grayAvg);
 
             const tierBonus = PLAYER_TIERS[playerTier];
+            const overallRating = calculateOverallRating(whiteAttrs, tierBonus);
+
             const summaryBox = document.getElementById('summaryBox');
             summaryBox.innerHTML = `
                 <h3>📊 ${t('summary')}</h3>
                 <div style="font-size: 14px; line-height: 1.8;">
                     <div><strong>${t('playerTier')}</strong> ${t('tiers.' + playerTier)} (+${tierBonus} ${t('tierIncluded')})</div>
                     <div style="font-size: 12px; color: #666; margin-top: 5px;">${t('tierSubtracted')}</div>
+                    <div style="margin-top: 10px; padding: 10px; background: #e7f3ff; border-radius: 6px; border: 2px solid #2196F3;">
+                        <strong style="color: #0d47a1;">⚽ ${t('overallRating')}</strong><br>
+                        <span style="font-size: 13px;">
+                            ${t('overallBase')} <strong>${overallRating.base.toFixed(2)}</strong><br>
+                            ${t('overallWithBonus')} <strong style="color: #667eea;">${overallRating.withBonus.toFixed(2)}</strong>
+                        </span>
+                    </div>
                     <div style="margin-top: 10px;"><strong>${t('effectiveDrills')}</strong> ${whiteDrills.length + mixedDrills.length + grayDrills.length}</div>
                     <div style="color: #28a745;">▪ ${t('whiteOnly')} ${whiteDrills.length}</div>
                     <div style="color: #ffc107;">▪ ${t('mixed')} ${mixedDrills.length}</div>
@@ -1189,6 +1208,33 @@
             const overallAvg = allValues.length > 0 ? allValues.reduce((a, b) => a + b, 0) / allValues.length : null;
 
             return { whiteAttrs: whiteInDrill, grayAttrs: grayInDrill, whiteAvg, grayAvg, overallAvg };
+        }
+
+        function calculateOverallRating(whiteAttrs, tierBonus) {
+            const attributes = selectedRole === 'GK' ? GK_ATTRIBUTES : REGULAR_ATTRIBUTES;
+            let totalSumWithBonus = 0;  // Sum of input values (with tier already in whites)
+            let totalSumBase = 0;       // Sum after removing tier from whites
+            let count = 0;
+
+            attributes.forEach(attr => {
+                if (attr in playerStats) {
+                    totalSumWithBonus += playerStats[attr];
+
+                    if (whiteAttrs.has(attr)) {
+                        // White attributes: subtract tier bonus to get base
+                        totalSumBase += playerStats[attr] - tierBonus;
+                    } else {
+                        // Gray attributes: no tier bonus, use as-is
+                        totalSumBase += playerStats[attr];
+                    }
+                    count++;
+                }
+            });
+
+            const base = count > 0 ? totalSumBase / count : 0;
+            const withBonus = count > 0 ? totalSumWithBonus / count : 0;
+
+            return { base, withBonus };
         }
 
         function createDrillCard(drill, type) {
@@ -1307,6 +1353,7 @@
             const attributes = selectedRole === 'GK' ? GK_ATTRIBUTES : REGULAR_ATTRIBUTES;
             const whiteAttrs = new Set(ROLE_WHITES[selectedRole]);
             const tierBonus = PLAYER_TIERS[playerTier];
+            const overallRating = calculateOverallRating(whiteAttrs, tierBonus);
 
             let html = '<div class="attributes-display">';
 
@@ -1315,6 +1362,14 @@
                     <strong>${t('playerTier')}</strong> ${t('tiers.' + playerTier)} (+${tierBonus} ${t('bonusIncluded')})
                 </div>`;
             }
+
+            html += `<div style="background: #e7f3ff; border: 2px solid #2196F3; border-radius: 8px; padding: 12px; margin-bottom: 15px; font-size: 14px; color: #0d47a1;">
+                <strong>⚽ ${t('overallRating')}</strong><br>
+                <span style="font-size: 13px;">
+                    ${t('overallBase')} <strong>${overallRating.base.toFixed(2)}</strong><br>
+                    ${t('overallWithBonus')} <strong style="color: #667eea;">${overallRating.withBonus.toFixed(2)}</strong>
+                </span>
+            </div>`;
 
             html += `<h4>${t('whitePrimary')}</h4>`;
             attributes.forEach(attr => {
