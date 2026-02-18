@@ -480,6 +480,10 @@
 
             <div class="summary-box" id="summaryBox"></div>
 
+            <button class="btn" onclick="generateFullPlan()" style="margin-bottom: 20px; background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);">
+                <span id="fullPlanBtn">📋 תוכנית אימונים מלאה (BETA - אל תסתמך!)</span>
+            </button>
+
             <div id="recommendationsList"></div>
 
             <div class="action-buttons">
@@ -487,6 +491,17 @@
                 <button class="btn btn-secondary" onclick="viewAttributes()"><span id="viewBtn">צפה במאפיינים</span></button>
             </div>
             <button class="btn" onclick="backToRoles()" style="margin-top: 10px;"><span id="startOverBtn">→ התחל מחדש</span></button>
+        </div>
+
+        <!-- Full Training Plan Section -->
+        <div id="fullPlanSection" class="section">
+            <h2 style="margin-bottom: 15px;" id="fullPlanTitle">תוכנית אימונים מלאה</h2>
+            <p style="margin-bottom: 20px; color: #666;"><span id="roleLabel4">תפקיד:</span> <strong id="planRoleName"></strong></p>
+
+            <div id="planSummary" class="summary-box"></div>
+            <div id="planSteps"></div>
+
+            <button class="btn" onclick="backToRecommendations()" style="margin-top: 20px;"><span id="backToPlanRecsBtn">→ חזור להמלצות</span></button>
         </div>
 
         <!-- View Attributes Section -->
@@ -539,6 +554,9 @@
                 recsTitle: 'המלצות אימון',
                 updateBtn: 'עדכן מאפיינים',
                 viewBtn: 'צפה במאפיינים',
+                fullPlanBtn: '📋 תוכנית אימונים מלאה (BETA)',
+                betaWarning: 'גרסת ניסיון (BETA)',
+                betaWarningText: 'תוכנית האימונים היא בגרסת ניסיון. אין להסתמך עליה באופן מוחלט. השתמש בשיקול דעתך.',
                 startOverBtn: '→ התחל מחדש',
                 summary: 'סיכום',
                 playerTier: 'דרגת שחקן:',
@@ -568,6 +586,19 @@
                 saveBtn: 'שמור וחשב מחדש ⚡',
                 cancelBtn: '→ בטל',
 
+                // Full Training Plan
+                fullPlanTitle: 'תוכנית אימונים מלאה',
+                planSummary: 'סיכום תוכנית',
+                currentRating: 'דירוג נוכחי:',
+                targetRating: 'דירוג יעד:',
+                totalDrills: 'סך תרגילים:',
+                newRating: 'דירוג חדש:',
+                finalAttributes: 'מאפיינים סופיים',
+                step: 'שלב',
+                trains: '→',
+                backToPlanRecsBtn: '→ חזור להמלצות',
+                roleLabel4: 'תפקיד:',
+
                 // Overall Rating
                 overallRating: 'איכות כללית',
                 overallBase: 'בסיס (ללא בונוס):',
@@ -578,6 +609,8 @@
                 grayAvg: 'ממוצע אפור:',
                 overall: 'כללי:',
                 potential: 'פוטנציאל:',
+                whitePotential: 'פוטנציאל לבן:',
+                grayPotential: 'פוטנציאל אפור:',
                 white: 'לבן:',
                 gray: 'אפור:',
                 trains: '→',
@@ -694,6 +727,9 @@
                 recsTitle: 'Training Recommendations',
                 updateBtn: 'Update Attributes',
                 viewBtn: 'View Attributes',
+                fullPlanBtn: '📋 Full Training Plan (BETA)',
+                betaWarning: 'Beta Version (BETA)',
+                betaWarningText: 'The training plan is in beta version. Do not rely on it completely. Use your own judgment.',
                 startOverBtn: '← Start Over',
                 summary: 'Summary',
                 playerTier: 'Player Tier:',
@@ -723,6 +759,19 @@
                 saveBtn: 'Save & Recalculate ⚡',
                 cancelBtn: '← Cancel',
 
+                // Full Training Plan
+                fullPlanTitle: 'Full Training Plan',
+                planSummary: 'Plan Summary',
+                currentRating: 'Current Rating:',
+                targetRating: 'Target Rating:',
+                totalDrills: 'Total Drills:',
+                newRating: 'New Rating:',
+                finalAttributes: 'Final Attributes',
+                step: 'Step',
+                trains: '→',
+                backToPlanRecsBtn: '← Back to Recommendations',
+                roleLabel4: 'Role:',
+
                 // Overall Rating
                 overallRating: 'Overall Rating',
                 overallBase: 'Base (no tier):',
@@ -733,6 +782,8 @@
                 grayAvg: 'Gray Avg:',
                 overall: 'Overall:',
                 potential: 'Potential:',
+                whitePotential: 'White Potential:',
+                grayPotential: 'Gray Potential:',
                 white: 'WHITE:',
                 gray: 'GRAY:',
                 trains: '→',
@@ -871,12 +922,19 @@
             document.getElementById('updateInstruction').textContent = t('updateInstruction');
             document.getElementById('saveBtn').textContent = t('saveBtn');
             document.getElementById('cancelBtn').textContent = t('cancelBtn');
+            document.getElementById('fullPlanBtn').textContent = t('fullPlanBtn');
+            document.getElementById('betaWarning').textContent = t('betaWarning');
+            document.getElementById('betaWarningText').textContent = t('betaWarningText');
+            document.getElementById('fullPlanTitle').textContent = t('fullPlanTitle');
+            document.getElementById('roleLabel4').textContent = t('roleLabel');
+            document.getElementById('backToPlanRecsBtn').textContent = t('backToPlanRecsBtn');
 
             // Re-render current section content if needed
             if (selectedRole) {
                 document.getElementById('selectedRoleName').textContent = selectedRole;
                 document.getElementById('recRoleName').textContent = selectedRole;
                 document.getElementById('viewRoleName').textContent = selectedRole;
+                document.getElementById('planRoleName').textContent = selectedRole;
             }
         }
 
@@ -1225,7 +1283,13 @@
             const allValues = [...whiteValues, ...grayValues];
             const overallAvg = allValues.length > 0 ? allValues.reduce((a, b) => a + b, 0) / allValues.length : null;
 
-            return { whiteAttrs: whiteInDrill, grayAttrs: grayInDrill, whiteAvg, grayAvg, overallAvg };
+            // Calculate weighted potential based on 2:1 growth ratio (whites +2, grays +1)
+            const totalGrowthParts = (whiteInDrill.length * 2) + (grayInDrill.length * 1);
+            const totalPotential = overallAvg !== null ? EFFECTIVENESS_THRESHOLD - overallAvg : 0;
+            const whitePotential = totalGrowthParts > 0 ? (whiteInDrill.length * 2 / totalGrowthParts) * totalPotential : 0;
+            const grayPotential = totalGrowthParts > 0 ? (grayInDrill.length * 1 / totalGrowthParts) * totalPotential : 0;
+
+            return { whiteAttrs: whiteInDrill, grayAttrs: grayInDrill, whiteAvg, grayAvg, overallAvg, whitePotential, grayPotential, totalPotential };
         }
 
         function calculateOverallRating(whiteAttrs, tierBonus) {
@@ -1261,13 +1325,13 @@
 
             let statsHtml = '';
             if (type === 'white') {
-                statsHtml = `${t('whiteAvg')} ${drill.whiteAvg.toFixed(1)} | ${t('potential')} +${drill.potential.toFixed(1)}`;
+                statsHtml = `${t('whiteAvg')} ${drill.whiteAvg.toFixed(1)} | ${t('potential')} +${drill.whitePotential.toFixed(1)}`;
             } else if (type === 'mixed') {
                 const whiteStr = drill.whiteAvg ? `${t('white')} ${drill.whiteAvg.toFixed(1)}` : '';
                 const grayStr = drill.grayAvg ? `${t('gray')} ${drill.grayAvg.toFixed(1)}` : '';
-                statsHtml = `${whiteStr} | ${grayStr} | ${t('overall')} ${drill.overallAvg.toFixed(1)}`;
+                statsHtml = `${whiteStr} | ${grayStr} | ${t('overall')} ${drill.overallAvg.toFixed(1)} | ${t('whitePotential')} +${drill.whitePotential.toFixed(1)} | ${t('grayPotential')} +${drill.grayPotential.toFixed(1)}`;
             } else {
-                statsHtml = `${t('grayAvg')} ${drill.grayAvg.toFixed(1)} | ${t('overall')} ${drill.overallAvg.toFixed(1)}`;
+                statsHtml = `${t('grayAvg')} ${drill.grayAvg.toFixed(1)} | ${t('overall')} ${drill.overallAvg.toFixed(1)} | ${t('potential')} +${drill.grayPotential.toFixed(1)}`;
             }
 
             let attrsHtml = '';
@@ -1410,6 +1474,281 @@
             display.innerHTML = html;
         }
 
+        function generateFullPlan() {
+            showSection('fullPlanSection');
+            document.getElementById('planRoleName').textContent = selectedRole;
+
+            const whiteAttrs = new Set(ROLE_WHITES[selectedRole]);
+            const tierBonus = PLAYER_TIERS[playerTier];
+            const attributes = selectedRole === 'GK' ? GK_ATTRIBUTES : REGULAR_ATTRIBUTES;
+            const TARGET_RATING = 180;
+            const GRAY_CAP = 120; // Increased from 110 to 120
+
+            // Clone current stats for simulation
+            let simulatedStats = { ...playerStats };
+            let currentOverall = calculateOverallRating(whiteAttrs, tierBonus).base;
+            const steps = [];
+            const MAX_STEPS = 2000; // Increased from 500 to 2000
+
+            // Simple greedy: train lowest white, prefer drills with fewer grays
+            while (currentOverall < TARGET_RATING && steps.length < MAX_STEPS) {
+                let bestDrill = null;
+                let bestMinWhite = Infinity;
+                let bestGrayCount = Infinity;
+
+                for (const [name, attrs, difficulty, category] of DRILLS) {
+                    // Separate whites and grays
+                    const whiteInDrill = [];
+                    const grayInDrill = [];
+                    for (const attr of attrs) {
+                        if (attr in simulatedStats) {
+                            if (whiteAttrs.has(attr)) whiteInDrill.push(attr);
+                            else grayInDrill.push(attr);
+                        }
+                    }
+
+                    if (whiteInDrill.length === 0) continue; // Must train at least one white
+
+                    // Skip if any gray is >= 110
+                    let hasHighGray = false;
+                    for (const attr of grayInDrill) {
+                        if (simulatedStats[attr] >= GRAY_CAP) {
+                            hasHighGray = true;
+                            break;
+                        }
+                    }
+                    if (hasHighGray) continue;
+
+                    // Check drill effectiveness: AVERAGE of trained attributes must be < 180
+                    let attrSum = 0;
+                    let attrCount = 0;
+                    for (const attr of attrs) {
+                        if (attr in simulatedStats) {
+                            const value = whiteAttrs.has(attr) ? simulatedStats[attr] - tierBonus : simulatedStats[attr];
+                            attrSum += value;
+                            attrCount++;
+                        }
+                    }
+                    if (attrCount === 0) continue;
+                    const drillAverage = attrSum / attrCount;
+                    if (drillAverage >= 180) continue; // Drill is ineffective
+
+                    // Find minimum white value
+                    let minWhite = Infinity;
+                    for (const attr of whiteInDrill) {
+                        const baseValue = simulatedStats[attr] - tierBonus;
+                        if (baseValue < minWhite) minWhite = baseValue;
+                    }
+
+                    // Selection: lowest min white, then FEWEST grays
+                    if (minWhite < bestMinWhite) {
+                        bestMinWhite = minWhite;
+                        bestGrayCount = grayInDrill.length;
+                        bestDrill = { name, attrs, difficulty, category, whiteInDrill, grayInDrill };
+                    } else if (minWhite === bestMinWhite && grayInDrill.length < bestGrayCount) {
+                        // Same min white: prefer drill with fewer grays
+                        bestGrayCount = grayInDrill.length;
+                        bestDrill = { name, attrs, difficulty, category, whiteInDrill, grayInDrill };
+                    }
+                }
+
+                if (!bestDrill) break; // No more drills
+
+                // Apply drill: +2 for whites, +1 for grays (game mechanic)
+                for (const attr of bestDrill.attrs) {
+                    if (attr in simulatedStats) {
+                        if (whiteAttrs.has(attr)) {
+                            simulatedStats[attr] += 2; // White attributes increase by 2
+                        } else {
+                            simulatedStats[attr] += 1; // Gray attributes increase by 1
+                        }
+                    }
+                }
+
+                steps.push({ drill: bestDrill, stats: { ...simulatedStats } });
+                currentOverall = calculateOverallRatingWithStats(whiteAttrs, tierBonus, simulatedStats, attributes).base;
+            }
+
+            // Display summary
+            const finalRating = currentOverall;
+            const initialRating = calculateOverallRating(whiteAttrs, tierBonus).base;
+
+            const summaryBox = document.getElementById('planSummary');
+            summaryBox.innerHTML = `
+                <h3>📊 ${t('planSummary')}</h3>
+                <div style="font-size: 14px; line-height: 1.8;">
+                    <div><strong>${t('currentRating')}</strong> ${initialRating.toFixed(2)}</div>
+                    <div><strong>${t('targetRating')}</strong> ${TARGET_RATING}</div>
+                    <div><strong>${t('totalDrills')}</strong> ${steps.length}</div>
+                    <div><strong>${t('newRating')}</strong> <span style="color: #667eea; font-size: 18px;">${finalRating.toFixed(2)}</span></div>
+                </div>
+            `;
+
+            // Display final attributes
+            const stepsContainer = document.getElementById('planSteps');
+            stepsContainer.innerHTML = '';
+
+            const finalAttrsBox = document.createElement('div');
+            finalAttrsBox.className = 'summary-box';
+            finalAttrsBox.style.marginBottom = '20px';
+
+            let attrsHtml = `<h3>📈 ${t('finalAttributes')}</h3>`;
+            attrsHtml += '<table style="width: 100%; border-collapse: collapse; font-size: 13px;"><tr style="background: #667eea; color: white;"><th style="padding: 8px;">Attribute</th><th style="padding: 8px; text-align: center;">Current</th><th style="padding: 8px; text-align: center;">Final</th><th style="padding: 8px; text-align: center;">+</th></tr>';
+
+            const sortedAttrs = attributes.filter(a => a in playerStats).sort((a, b) => {
+                if (whiteAttrs.has(a) && !whiteAttrs.has(b)) return -1;
+                if (!whiteAttrs.has(a) && whiteAttrs.has(b)) return 1;
+                return 0;
+            });
+
+            sortedAttrs.forEach(attr => {
+                const current = playerStats[attr];
+                const final = simulatedStats[attr];
+                const diff = final - current;
+                const isWhite = whiteAttrs.has(attr);
+                const bgColor = isWhite ? '#f1f9f3' : '#f8f9fa';
+
+                attrsHtml += `<tr style="background: ${bgColor};"><td style="padding: 8px; font-weight: ${isWhite ? '600' : '400'};">${t('attrs.' + attr)} ${isWhite ? '⭐' : ''}</td><td style="padding: 8px; text-align: center;">${current}</td><td style="padding: 8px; text-align: center; font-weight: 600; color: ${diff > 0 ? '#667eea' : '#666'};">${final}</td><td style="padding: 8px; text-align: center; color: ${diff > 0 ? '#28a745' : '#999'}; font-weight: ${diff > 0 ? '600' : '400'};">${diff > 0 ? '+' + diff : '0'}</td></tr>`;
+            });
+
+            attrsHtml += '</table>';
+            finalAttrsBox.innerHTML = attrsHtml;
+            stepsContainer.appendChild(finalAttrsBox);
+
+            // Group ALL instances of same drill (not just consecutive)
+            const drillGroups = new Map();
+            const drillOrder = []; // Track order of first appearance
+
+            steps.forEach(step => {
+                if (!drillGroups.has(step.drill.name)) {
+                    drillGroups.set(step.drill.name, {
+                        name: step.drill.name,
+                        drill: step.drill,
+                        count: 0
+                    });
+                    drillOrder.push(step.drill.name);
+                }
+                drillGroups.get(step.drill.name).count++;
+            });
+
+            // Calculate final stats after each unique drill
+            const drillsToDisplay = drillOrder.map(name => drillGroups.get(name));
+
+            // Sort drills: 0 grays (whites only), then 1 gray, then 2 grays, etc. - each sorted by difficulty
+            const difficultyOrder = { 'VERY EASY': 1, 'EASY': 2, 'MEDIUM': 3, 'HARD': 4, 'VERY HARD': 5 };
+            drillsToDisplay.sort((a, b) => {
+                const aGrayCount = a.drill.grayInDrill.length;
+                const bGrayCount = b.drill.grayInDrill.length;
+
+                // First sort by number of grays (0, then 1, then 2, etc.)
+                if (aGrayCount !== bGrayCount) {
+                    return aGrayCount - bGrayCount;
+                }
+
+                // Within same gray count, sort by difficulty
+                return difficultyOrder[a.drill.difficulty] - difficultyOrder[b.drill.difficulty];
+            });
+
+            // Display grouped drills
+            let cumulativeStats = { ...playerStats };
+
+            drillsToDisplay.forEach((item, index) => {
+                // Apply this drill's effect to cumulative stats (+2 for whites, +1 for grays)
+                item.drill.attrs.forEach(attr => {
+                    if (attr in cumulativeStats) {
+                        if (whiteAttrs.has(attr)) {
+                            cumulativeStats[attr] += item.count * 2; // Whites increase by 2 per drill
+                        } else {
+                            cumulativeStats[attr] += item.count * 1; // Grays increase by 1 per drill
+                        }
+                    }
+                });
+
+                // Calculate overall rating after this drill
+                const ratingAfter = calculateOverallRatingWithStats(whiteAttrs, tierBonus, cumulativeStats, attributes).base;
+
+                const card = document.createElement('div');
+                card.className = `drill-card category-${item.drill.category}`;
+                card.style.background = item.drill.grayInDrill.length === 0 ? '#f1f9f3' : '#fffbf0';
+                card.style.borderLeft = `5px solid ${item.drill.grayInDrill.length === 0 ? '#28a745' : '#ffc107'}`;
+
+                if (currentLang === 'he') {
+                    card.style.borderLeft = 'none';
+                    card.style.borderRight = `5px solid ${item.drill.grayInDrill.length === 0 ? '#28a745' : '#ffc107'}`;
+                }
+
+                const whiteTrains = item.drill.whiteInDrill.map(a => `<span style="color: #28a745; font-weight: 600;">${t('attrs.' + a)}</span>`).join(', ');
+                const grayTrains = item.drill.grayInDrill.map(a => `<span style="color: #6c757d;">${t('attrs.' + a)}</span>`).join(', ');
+
+                // Calculate what the increases will be for this drill's attributes
+                let attrsHtml = '<div style="margin-top: 12px; padding: 10px; background: rgba(102, 126, 234, 0.05); border-radius: 6px;">';
+                attrsHtml += '<div style="font-size: 11px; font-weight: 600; color: #667eea; margin-bottom: 8px;">' + (currentLang === 'he' ? 'כל המאפיינים אחרי תרגיל זה:' : 'All Attributes After This Drill:') + '</div>';
+                attrsHtml += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; font-size: 11px;">';
+
+                // Show ALL 15 attributes
+                attributes.forEach(attr => {
+                    if (attr in cumulativeStats) {
+                        const value = cumulativeStats[attr];
+                        const isBeingTrained = item.drill.attrs.includes(attr);
+                        const isWhite = whiteAttrs.has(attr);
+                        const baseValue = isWhite ? value - tierBonus : value;
+                        // Calculate increase: +2 for whites, +1 for grays
+                        const increase = isBeingTrained ? (isWhite ? item.count * 2 : item.count * 1) : 0;
+
+                        attrsHtml += `
+                            <div style="padding: 4px 6px; background: ${isWhite ? '#f1f9f3' : '#f8f9fa'}; border-radius: 4px; ${isBeingTrained ? 'border: 2px solid #667eea;' : ''}">
+                                <div style="font-weight: ${isWhite ? '600' : '400'}; color: ${isBeingTrained ? '#667eea' : '#333'}; font-size: 10px;">
+                                    ${t('attrs.' + attr)}${isWhite ? ' ⭐' : ''}
+                                </div>
+                                <div style="font-weight: 600; color: ${baseValue >= 180 ? '#28a745' : (increase > 0 ? '#667eea' : '#666')}; font-size: 13px;">
+                                    ${Math.round(baseValue)}${increase > 0 ? ` <span style="color: #28a745; font-size: 10px;">+${increase}</span>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+
+                attrsHtml += '</div></div>';
+
+                card.innerHTML = `
+                    <h3 style="color: #667eea;">
+                        ${t('drills.' + item.drill.name)}
+                        <span style="background: #667eea; color: white; padding: 4px 8px; border-radius: 4px; font-size: 14px; margin-left: 8px;">×${item.count}</span>
+                        <span class="badge badge-category badge-${item.drill.category}">${t(item.drill.category)}</span>
+                        <span class="badge badge-difficulty">${t('difficulties.' + item.drill.difficulty)}</span>
+                    </h3>
+                    <div style="font-size: 13px; margin-top: 8px; margin-bottom: 8px;">
+                        <strong>${t('trains')}</strong> ${whiteTrains}${grayTrains ? ', ' + grayTrains : ''}
+                    </div>
+                    <div style="font-size: 14px; color: #667eea; font-weight: 600; margin-bottom: 8px;">
+                        ${currentLang === 'he' ? 'דירוג אחרי:' : 'Overall After:'} <span style="color: ${ratingAfter >= 180 ? '#28a745' : '#667eea'}; font-size: 16px;">${ratingAfter.toFixed(2)}</span>
+                    </div>
+                    ${attrsHtml}
+                `;
+
+                stepsContainer.appendChild(card);
+            });
+        }
+
+        function calculateOverallRatingWithStats(whiteAttrs, tierBonus, stats, attributes) {
+            let totalBase = 0;
+            let totalWithBonus = 0;
+            let count = 0;
+
+            attributes.forEach(attr => {
+                if (attr in stats) {
+                    totalWithBonus += stats[attr];
+                    totalBase += whiteAttrs.has(attr) ? stats[attr] - tierBonus : stats[attr];
+                    count++;
+                }
+            });
+
+            return {
+                base: count > 0 ? totalBase / count : 0,
+                withBonus: count > 0 ? totalWithBonus / count : 0
+            };
+        }
+
         function backToRecommendations() {
             showSection('recommendationsSection');
         }
@@ -1435,3 +1774,4 @@
     </script>
 </body>
 </html>
+
