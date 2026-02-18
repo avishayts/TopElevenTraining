@@ -1570,17 +1570,32 @@
             }
 
             // Display summary
-            const finalRating = currentOverall;
-            const initialRating = calculateOverallRating(whiteAttrs, tierBonus).base;
+            const finalRatingObj = calculateOverallRatingWithStats(whiteAttrs, tierBonus, simulatedStats, attributes);
+            const finalRating = finalRatingObj.base;
+            const finalRatingWithBonus = finalRatingObj.withBonus;
+            const initialRatingObj = calculateOverallRating(whiteAttrs, tierBonus);
+            const initialRating = initialRatingObj.base;
+            const initialRatingWithBonus = initialRatingObj.withBonus;
 
             const summaryBox = document.getElementById('planSummary');
             summaryBox.innerHTML = `
                 <h3>📊 ${t('planSummary')}</h3>
                 <div style="font-size: 14px; line-height: 1.8;">
-                    <div><strong>${t('currentRating')}</strong> ${initialRating.toFixed(2)}</div>
+                    <div style="margin-bottom: 10px; padding: 10px; background: #e7f3ff; border-radius: 6px; border: 2px solid #2196F3;">
+                        <strong style="color: #0d47a1;">${t('currentRating')}</strong><br>
+                        <span style="font-size: 13px;">
+                            ${t('overallBase')} <strong>${initialRating.toFixed(2)}</strong><br>
+                            ${t('overallWithBonus')} <strong style="color: #667eea;">${initialRatingWithBonus.toFixed(2)}</strong>
+                        </span>
+                    </div>
                     <div><strong>${t('targetRating')}</strong> ${TARGET_RATING}</div>
-                    <div><strong>${t('totalDrills')}</strong> ${steps.length}</div>
-                    <div><strong>${t('newRating')}</strong> <span style="color: #667eea; font-size: 18px;">${finalRating.toFixed(2)}</span></div>
+                    <div style="margin-top: 10px; padding: 10px; background: #e7f3ff; border-radius: 6px; border: 2px solid #2196F3;">
+                        <strong style="color: #0d47a1;">${t('newRating')}</strong><br>
+                        <span style="font-size: 13px;">
+                            ${t('overallBase')} <strong style="color: ${finalRating >= 180 ? '#28a745' : '#667eea'};">${finalRating.toFixed(2)}</strong><br>
+                            ${t('overallWithBonus')} <strong style="color: ${finalRatingWithBonus >= 180 ? '#28a745' : '#667eea'};">${finalRatingWithBonus.toFixed(2)}</strong>
+                        </span>
+                    </div>
                 </div>
             `;
 
@@ -1664,8 +1679,10 @@
                     }
                 });
 
-                // Calculate overall rating after this drill
-                const ratingAfter = calculateOverallRatingWithStats(whiteAttrs, tierBonus, cumulativeStats, attributes).base;
+                // Calculate overall rating after this drill (both base and with bonus)
+                const ratingAfterObj = calculateOverallRatingWithStats(whiteAttrs, tierBonus, cumulativeStats, attributes);
+                const ratingAfter = ratingAfterObj.base;
+                const ratingAfterWithBonus = ratingAfterObj.withBonus;
 
                 const card = document.createElement('div');
                 card.className = `drill-card category-${item.drill.category}`;
@@ -1713,15 +1730,18 @@
                 card.innerHTML = `
                     <h3 style="color: #667eea;">
                         ${t('drills.' + item.drill.name)}
-                        <span style="background: #667eea; color: white; padding: 4px 8px; border-radius: 4px; font-size: 14px; margin-left: 8px;">×${item.count}</span>
                         <span class="badge badge-category badge-${item.drill.category}">${t(item.drill.category)}</span>
                         <span class="badge badge-difficulty">${t('difficulties.' + item.drill.difficulty)}</span>
                     </h3>
                     <div style="font-size: 13px; margin-top: 8px; margin-bottom: 8px;">
                         <strong>${t('trains')}</strong> ${whiteTrains}${grayTrains ? ', ' + grayTrains : ''}
                     </div>
-                    <div style="font-size: 14px; color: #667eea; font-weight: 600; margin-bottom: 8px;">
-                        ${currentLang === 'he' ? 'דירוג אחרי:' : 'Overall After:'} <span style="color: ${ratingAfter >= 180 ? '#28a745' : '#667eea'}; font-size: 16px;">${ratingAfter.toFixed(2)}</span>
+                    <div style="font-size: 13px; padding: 8px; background: #e7f3ff; border-radius: 6px; border: 2px solid #2196F3; margin-bottom: 8px;">
+                        <strong style="color: #0d47a1;">${currentLang === 'he' ? 'דירוג אחרי:' : 'Overall After:'}</strong><br>
+                        <span style="font-size: 12px;">
+                            ${t('overallBase')} <strong style="color: ${ratingAfter >= 180 ? '#28a745' : '#667eea'};">${ratingAfter.toFixed(2)}</strong><br>
+                            ${t('overallWithBonus')} <strong style="color: ${ratingAfterWithBonus >= 180 ? '#28a745' : '#667eea'};">${ratingAfterWithBonus.toFixed(2)}</strong>
+                        </span>
                     </div>
                     ${attrsHtml}
                 `;
