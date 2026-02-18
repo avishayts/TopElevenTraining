@@ -1486,6 +1486,13 @@
 
             // Clone current stats for simulation
             let simulatedStats = { ...playerStats };
+            // Track fractional parts for gray attributes (they grow by +0.5 per drill)
+            let grayFractional = {};
+            attributes.forEach(attr => {
+                if (!whiteAttrs.has(attr) && attr in simulatedStats) {
+                    grayFractional[attr] = 0;
+                }
+            });
             let currentOverall = calculateOverallRating(whiteAttrs, tierBonus).base;
             const steps = [];
             const MAX_STEPS = 2000; // Increased from 500 to 2000
@@ -1509,7 +1516,7 @@
 
                     if (whiteInDrill.length === 0) continue; // Must train at least one white
 
-                    // Skip if any gray is >= 110
+                    // Skip if any gray is >= 120
                     let hasHighGray = false;
                     for (const attr of grayInDrill) {
                         if (simulatedStats[attr] >= GRAY_CAP) {
@@ -1554,13 +1561,16 @@
 
                 if (!bestDrill) break; // No more drills
 
-                // Apply drill: +2 for whites, +1 for grays (game mechanic)
+                // Apply drill: +1 for whites, +0.5 for grays (rounded up when applied)
                 for (const attr of bestDrill.attrs) {
                     if (attr in simulatedStats) {
                         if (whiteAttrs.has(attr)) {
-                            simulatedStats[attr] += 2; // White attributes increase by 2
+                            simulatedStats[attr] += 1; // White attributes increase by 1
                         } else {
-                            simulatedStats[attr] += 1; // Gray attributes increase by 1
+                            // Gray attributes increase by 0.5, tracked with fractional part
+                            grayFractional[attr] = (grayFractional[attr] || 0) + 0.5;
+                            // Round up and apply
+                            simulatedStats[attr] = Math.floor(playerStats[attr]) + Math.ceil(grayFractional[attr]);
                         }
                     }
                 }
@@ -1610,13 +1620,8 @@
             let attrsHtml = `<h3>📈 ${t('finalAttributes')}</h3>`;
             attrsHtml += '<table style="width: 100%; border-collapse: collapse; font-size: 13px;"><tr style="background: #667eea; color: white;"><th style="padding: 8px;">Attribute</th><th style="padding: 8px; text-align: center;">Current</th><th style="padding: 8px; text-align: center;">Final</th><th style="padding: 8px; text-align: center;">+</th></tr>';
 
-            const sortedAttrs = attributes.filter(a => a in playerStats).sort((a, b) => {
-                if (whiteAttrs.has(a) && !whiteAttrs.has(b)) return -1;
-                if (!whiteAttrs.has(a) && whiteAttrs.has(b)) return 1;
-                return 0;
-            });
-
-            sortedAttrs.forEach(attr => {
+            // Keep original attribute order (don't sort)
+            attributes.filter(a => a in playerStats).forEach(attr => {
                 const current = playerStats[attr];
                 const final = simulatedStats[attr];
                 const diff = final - current;
@@ -1666,15 +1671,25 @@
 
             // Display grouped drills
             let cumulativeStats = { ...playerStats };
+            // Track fractional parts for gray attributes in display
+            let displayGrayFractional = {};
+            attributes.forEach(attr => {
+                if (!whiteAttrs.has(attr) && attr in cumulativeStats) {
+                    displayGrayFractional[attr] = 0;
+                }
+            });
 
             drillsToDisplay.forEach((item, index) => {
-                // Apply this drill's effect to cumulative stats (+2 for whites, +1 for grays)
+                // Apply this drill's effect to cumulative stats (+1 for whites, +0.5 for grays rounded up)
                 item.drill.attrs.forEach(attr => {
                     if (attr in cumulativeStats) {
                         if (whiteAttrs.has(attr)) {
-                            cumulativeStats[attr] += item.count * 2; // Whites increase by 2 per drill
+                            cumulativeStats[attr] += item.count * 1; // Whites increase by 1 per drill
                         } else {
-                            cumulativeStats[attr] += item.count * 1; // Grays increase by 1 per drill
+                            // Grays increase by 0.5 per drill, tracked with fractional part
+                            displayGrayFractional[attr] = (displayGrayFractional[attr] || 0) + (item.count * 0.5);
+                            // Round up and apply
+                            cumulativeStats[attr] = Math.floor(playerStats[attr]) + Math.ceil(displayGrayFractional[attr]);
                         }
                     }
                 });
@@ -1709,8 +1724,8 @@
                         const isBeingTrained = item.drill.attrs.includes(attr);
                         const isWhite = whiteAttrs.has(attr);
                         const baseValue = isWhite ? value - tierBonus : value;
-                        // Calculate increase: +2 for whites, +1 for grays
-                        const increase = isBeingTrained ? (isWhite ? item.count * 2 : item.count * 1) : 0;
+                        // Calculate increase: +1 for whites, +0.5 (rounded up) for grays
+                        const increase = isBeingTrained ? (isWhite ? item.count * 1 : Math.ceil(item.count * 0.5)) : 0;
 
                         attrsHtml += `
                             <div style="padding: 4px 6px; background: ${isWhite ? '#f1f9f3' : '#f8f9fa'}; border-radius: 4px; ${isBeingTrained ? 'border: 2px solid #667eea;' : ''}">
