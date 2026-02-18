@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מייעץ אימוני כדורגל</title>
+    <title>מחשבון לאימונים</title>
     <style>
         * {
             margin: 0;
@@ -444,7 +444,7 @@
     <div class="container">
         <div class="header">
             <button class="lang-switcher" onclick="toggleLanguage()">English</button>
-            <h1 id="headerTitle">⚽ מייעץ אימוני כדורגל</h1>
+            <h1 id="headerTitle">⚽ מחשבון לאימונים</h1>
             <p id="headerSubtitle">מצא את התרגילים הטובים ביותר לשחקן שלך</p>
         </div>
 
@@ -517,7 +517,7 @@
         const translations = {
             he: {
                 // Header
-                headerTitle: '⚽ מייעץ אימוני כדורגל',
+                headerTitle: '⚽ מחשבון לאימונים',
                 headerSubtitle: 'מצא את התרגילים הטובים ביותר לשחקן שלך',
 
                 // Role Selection
@@ -585,8 +585,17 @@
                 // Category names
                 attack: 'התקפה',
                 defense: 'הגנה',
-                physical: 'גופני ומנטלי',
-                possession: 'החזקה',
+                physical: 'פיזי ומנטלי',
+                possession: 'החזקת כדור',
+
+                // Difficulty levels
+                difficulties: {
+                    'VERY EASY': 'קל מאוד',
+                    'EASY': 'קל',
+                    'MEDIUM': 'בינוני',
+                    'HARD': 'קשה',
+                    'VERY HARD': 'קשה מאוד'
+                },
 
                 // Attributes
                 attrs: {
@@ -734,6 +743,15 @@
                 physical: 'Physical & Mental',
                 possession: 'Possession',
 
+                // Difficulty levels
+                difficulties: {
+                    'VERY EASY': 'Very Easy',
+                    'EASY': 'Easy',
+                    'MEDIUM': 'Medium',
+                    'HARD': 'Hard',
+                    'VERY HARD': 'Very Hard'
+                },
+
                 // Attributes (English names)
                 attrs: {
                     'Tackling': 'Tackling',
@@ -824,7 +842,7 @@
             document.documentElement.lang = currentLang;
             document.body.dir = currentLang === 'he' ? 'rtl' : 'ltr';
             document.querySelector('.lang-switcher').textContent = currentLang === 'he' ? 'English' : 'עברית';
-            document.title = currentLang === 'he' ? 'מייעץ אימוני כדורגל' : 'Football Training Optimizer';
+            document.title = currentLang === 'he' ? 'מחשבון לאימונים' : 'Football Training Optimizer';
             updateUILanguage();
         }
 
@@ -1266,7 +1284,7 @@
                 <h3>
                     ${t('drills.' + drill.name)}
                     <span class="badge badge-category badge-${drill.category}">${t(drill.category)}</span>
-                    <span class="badge badge-difficulty">${drill.difficulty}</span>
+                    <span class="badge badge-difficulty">${t('difficulties.' + drill.difficulty)}</span>
                 </h3>
                 <div class="drill-stats">${statsHtml}</div>
                 <div class="drill-attrs">${attrsHtml}</div>
