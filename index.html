@@ -337,9 +337,10 @@
 
         .attr-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 10px;
             margin-bottom: 20px;
+            direction: ltr; /* Keep columns left-to-right regardless of page direction */
         }
 
         .summary-box {
@@ -1117,16 +1118,27 @@
             const grid = document.createElement('div');
             grid.className = 'attr-grid';
 
-            attributes.forEach(attr => {
-                const isWhite = whiteAttrs.has(attr);
-                const formGroup = document.createElement('div');
-                formGroup.className = 'form-group';
-                formGroup.innerHTML = `
-                    <label>${t('attrs.' + attr)} ${isWhite ? '⭐' : ''}</label>
-                    <input type="number" id="attr_${attr}" min="0" value="${playerStats[attr] || ''}" required>
-                `;
-                grid.appendChild(formGroup);
-            });
+            // Create 3 columns with 5 attributes each
+            for (let col = 0; col < 3; col++) {
+                const column = document.createElement('div');
+
+                const startIdx = col * 5;
+                const endIdx = startIdx + 5;
+
+                for (let i = startIdx; i < endIdx && i < attributes.length; i++) {
+                    const attr = attributes[i];
+                    const isWhite = whiteAttrs.has(attr);
+                    const formGroup = document.createElement('div');
+                    formGroup.className = 'form-group';
+                    formGroup.innerHTML = `
+                        <label>${t('attrs.' + attr)} ${isWhite ? '⭐' : ''}</label>
+                        <input type="number" id="attr_${attr}" min="0" value="${playerStats[attr] || ''}" required>
+                    `;
+                    column.appendChild(formGroup);
+                }
+
+                grid.appendChild(column);
+            }
 
             form.appendChild(grid);
 
@@ -1382,17 +1394,28 @@
             const grid = document.createElement('div');
             grid.className = 'attr-grid';
 
-            attributes.forEach(attr => {
-                const isWhite = whiteAttrs.has(attr);
-                const current = playerStats[attr];
-                const formGroup = document.createElement('div');
-                formGroup.className = 'form-group';
-                formGroup.innerHTML = `
-                    <label>${t('attrs.' + attr)} ${isWhite ? '⭐' : ''} <span style="color: #999; font-size: 12px;">(${current})</span></label>
-                    <input type="number" id="update_${attr}" min="0" placeholder="${currentLang === 'he' ? 'השאר ריק = ' + current : 'Leave blank = ' + current}">
-                `;
-                grid.appendChild(formGroup);
-            });
+            // Create 3 columns with 5 attributes each
+            for (let col = 0; col < 3; col++) {
+                const column = document.createElement('div');
+
+                const startIdx = col * 5;
+                const endIdx = startIdx + 5;
+
+                for (let i = startIdx; i < endIdx && i < attributes.length; i++) {
+                    const attr = attributes[i];
+                    const isWhite = whiteAttrs.has(attr);
+                    const current = playerStats[attr];
+                    const formGroup = document.createElement('div');
+                    formGroup.className = 'form-group';
+                    formGroup.innerHTML = `
+                        <label>${t('attrs.' + attr)} ${isWhite ? '⭐' : ''} <span style="color: #999; font-size: 12px;">(${current})</span></label>
+                        <input type="number" id="update_${attr}" min="0" placeholder="${currentLang === 'he' ? 'השאר ריק = ' + current : 'Leave blank = ' + current}">
+                    `;
+                    column.appendChild(formGroup);
+                }
+
+                grid.appendChild(column);
+            }
 
             form.appendChild(grid);
         }
@@ -1618,20 +1641,34 @@
             finalAttrsBox.style.marginBottom = '20px';
 
             let attrsHtml = `<h3>📈 ${t('finalAttributes')}</h3>`;
-            attrsHtml += '<table style="width: 100%; border-collapse: collapse; font-size: 13px;"><tr style="background: #667eea; color: white;"><th style="padding: 8px;">Attribute</th><th style="padding: 8px; text-align: center;">Current</th><th style="padding: 8px; text-align: center;">Final</th><th style="padding: 8px; text-align: center;">+</th></tr>';
 
-            // Keep original attribute order (don't sort)
-            attributes.filter(a => a in playerStats).forEach(attr => {
-                const current = playerStats[attr];
-                const final = simulatedStats[attr];
-                const diff = final - current;
-                const isWhite = whiteAttrs.has(attr);
-                const bgColor = isWhite ? '#f1f9f3' : '#f8f9fa';
+            // Split attributes into 3 columns (5 each)
+            const attrsList = attributes.filter(a => a in playerStats);
+            attrsHtml += '<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; direction: ltr;">';
 
-                attrsHtml += `<tr style="background: ${bgColor};"><td style="padding: 8px; font-weight: ${isWhite ? '600' : '400'};">${t('attrs.' + attr)} ${isWhite ? '⭐' : ''}</td><td style="padding: 8px; text-align: center;">${current}</td><td style="padding: 8px; text-align: center; font-weight: 600; color: ${diff > 0 ? '#667eea' : '#666'};">${final}</td><td style="padding: 8px; text-align: center; color: ${diff > 0 ? '#28a745' : '#999'}; font-weight: ${diff > 0 ? '600' : '400'};">${diff > 0 ? '+' + diff : '0'}</td></tr>`;
-            });
+            for (let col = 0; col < 3; col++) {
+                attrsHtml += '<table style="width: 100%; border-collapse: collapse; font-size: 13px;">';
+                attrsHtml += '<tr style="background: #667eea; color: white;"><th style="padding: 8px;">Attribute</th><th style="padding: 8px; text-align: center;">Current</th><th style="padding: 8px; text-align: center;">Final</th><th style="padding: 8px; text-align: center;">+</th></tr>';
 
-            attrsHtml += '</table>';
+                // Each column shows 5 attributes
+                const startIdx = col * 5;
+                const endIdx = startIdx + 5;
+
+                for (let i = startIdx; i < endIdx && i < attrsList.length; i++) {
+                    const attr = attrsList[i];
+                    const current = playerStats[attr];
+                    const final = simulatedStats[attr];
+                    const diff = final - current;
+                    const isWhite = whiteAttrs.has(attr);
+                    const bgColor = isWhite ? '#f1f9f3' : '#f8f9fa';
+
+                    attrsHtml += `<tr style="background: ${bgColor};"><td style="padding: 8px; font-weight: ${isWhite ? '600' : '400'};">${t('attrs.' + attr)} ${isWhite ? '⭐' : ''}</td><td style="padding: 8px; text-align: center;">${current}</td><td style="padding: 8px; text-align: center; font-weight: 600; color: ${diff > 0 ? '#667eea' : '#666'};">${final}</td><td style="padding: 8px; text-align: center; color: ${diff > 0 ? '#28a745' : '#999'}; font-weight: ${diff > 0 ? '600' : '400'};">${diff > 0 ? '+' + diff : '0'}</td></tr>`;
+                }
+
+                attrsHtml += '</table>';
+            }
+
+            attrsHtml += '</div>';
             finalAttrsBox.innerHTML = attrsHtml;
             stepsContainer.appendChild(finalAttrsBox);
 
@@ -1715,30 +1752,40 @@
                 // Calculate what the increases will be for this drill's attributes
                 let attrsHtml = '<div style="margin-top: 12px; padding: 10px; background: rgba(102, 126, 234, 0.05); border-radius: 6px;">';
                 attrsHtml += '<div style="font-size: 11px; font-weight: 600; color: #667eea; margin-bottom: 8px;">' + (currentLang === 'he' ? 'כל המאפיינים אחרי תרגיל זה:' : 'All Attributes After This Drill:') + '</div>';
-                attrsHtml += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; font-size: 11px;">';
+                attrsHtml += '<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; font-size: 11px; direction: ltr;">';
 
-                // Show ALL 15 attributes
-                attributes.forEach(attr => {
-                    if (attr in cumulativeStats) {
-                        const value = cumulativeStats[attr];
-                        const isBeingTrained = item.drill.attrs.includes(attr);
-                        const isWhite = whiteAttrs.has(attr);
-                        const baseValue = isWhite ? value - tierBonus : value;
-                        // Calculate increase: +1 for whites, +0.5 (rounded up) for grays
-                        const increase = isBeingTrained ? (isWhite ? item.count * 1 : Math.ceil(item.count * 0.5)) : 0;
+                // Create 3 columns with 5 attributes each
+                for (let col = 0; col < 3; col++) {
+                    attrsHtml += '<div style="display: flex; flex-direction: column; gap: 6px;">';
 
-                        attrsHtml += `
-                            <div style="padding: 4px 6px; background: ${isWhite ? '#f1f9f3' : '#f8f9fa'}; border-radius: 4px; ${isBeingTrained ? 'border: 2px solid #667eea;' : ''}">
-                                <div style="font-weight: ${isWhite ? '600' : '400'}; color: ${isBeingTrained ? '#667eea' : '#333'}; font-size: 10px;">
-                                    ${t('attrs.' + attr)}${isWhite ? ' ⭐' : ''}
+                    const startIdx = col * 5;
+                    const endIdx = startIdx + 5;
+
+                    for (let i = startIdx; i < endIdx && i < attributes.length; i++) {
+                        const attr = attributes[i];
+                        if (attr in cumulativeStats) {
+                            const value = cumulativeStats[attr];
+                            const isBeingTrained = item.drill.attrs.includes(attr);
+                            const isWhite = whiteAttrs.has(attr);
+                            const baseValue = isWhite ? value - tierBonus : value;
+                            // Calculate increase: +1 for whites, +0.5 (rounded up) for grays
+                            const increase = isBeingTrained ? (isWhite ? item.count * 1 : Math.ceil(item.count * 0.5)) : 0;
+
+                            attrsHtml += `
+                                <div style="padding: 4px 6px; background: ${isWhite ? '#f1f9f3' : '#f8f9fa'}; border-radius: 4px; ${isBeingTrained ? 'border: 2px solid #667eea;' : ''}">
+                                    <div style="font-weight: ${isWhite ? '600' : '400'}; color: ${isBeingTrained ? '#667eea' : '#333'}; font-size: 10px;">
+                                        ${t('attrs.' + attr)}${isWhite ? ' ⭐' : ''}
+                                    </div>
+                                    <div style="font-weight: 600; color: ${increase > 0 ? '#667eea' : '#666'}; font-size: 13px;">
+                                        ${Math.round(baseValue)}${increase > 0 ? ` <span style="color: #28a745; font-size: 10px;">+${increase}</span>` : ''}
+                                    </div>
                                 </div>
-                                <div style="font-weight: 600; color: ${baseValue >= 180 ? '#28a745' : (increase > 0 ? '#667eea' : '#666')}; font-size: 13px;">
-                                    ${Math.round(baseValue)}${increase > 0 ? ` <span style="color: #28a745; font-size: 10px;">+${increase}</span>` : ''}
-                                </div>
-                            </div>
-                        `;
+                            `;
+                        }
                     }
-                });
+
+                    attrsHtml += '</div>';
+                }
 
                 attrsHtml += '</div></div>';
 
