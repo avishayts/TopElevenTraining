@@ -1767,7 +1767,6 @@
                             const value = cumulativeStats[attr];
                             const isBeingTrained = item.drill.attrs.includes(attr);
                             const isWhite = whiteAttrs.has(attr);
-                            const baseValue = isWhite ? value - tierBonus : value;
                             // Calculate increase: +1 for whites, +0.5 (rounded up) for grays
                             const increase = isBeingTrained ? (isWhite ? item.count * 1 : Math.ceil(item.count * 0.5)) : 0;
 
@@ -1777,7 +1776,7 @@
                                         ${t('attrs.' + attr)}${isWhite ? ' ⭐' : ''}
                                     </div>
                                     <div style="font-weight: 600; color: ${increase > 0 ? '#667eea' : '#666'}; font-size: 13px;">
-                                        ${Math.round(baseValue)}${increase > 0 ? ` <span style="color: #28a745; font-size: 10px;">+${increase}</span>` : ''}
+                                        ${Math.round(value)}${increase > 0 ? ` <span style="color: #28a745; font-size: 10px;">+${increase}</span>` : ''}
                                     </div>
                                 </div>
                             `;
