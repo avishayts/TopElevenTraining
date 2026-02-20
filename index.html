@@ -549,7 +549,7 @@
                 getRecsBtn: 'קבל המלצות ⚡',
                 backBtn: '→ חזור',
                 playerTierLabel: '⭐ דרגת שחקן',
-                tierNote: '💡 <strong>הערה:</strong> הזן את הערכים הכוללים שאתה רואה במשחק (הכולל את בונוס הדרגה). בונוס הדרגה יופחת ממאפיינים לבנים בעת חישוב יעילות תרגיל (סף 179).',
+                tierNote: '💡 <strong>הערה:</strong> הזן את הערכים הכוללים שאתה רואה במשחק (הכולל את בונוס הדרגה). בונוס הדרגה יופחת ממאפיינים לבנים בעת חישוב יעילות תרגיל (סף 179.5).',
 
                 // Recommendations
                 recsTitle: 'המלצות אימון',
@@ -562,7 +562,7 @@
                 summary: 'סיכום',
                 playerTier: 'דרגת שחקן:',
                 tierIncluded: 'נכלל במאפיינים לבנים',
-                tierSubtracted: 'בונוס הדרגה מופחת מהחישוב (ערכי בסיס משמשים לסף 179)',
+                tierSubtracted: 'בונוס הדרגה מופחת מהחישוב (ערכי בסיס משמשים לסף 179.5)',
                 effectiveDrills: 'תרגילים יעילים:',
                 whiteOnly: 'לבן בלבד:',
                 mixed: 'מעורב:',
@@ -722,7 +722,7 @@
                 getRecsBtn: 'Get Recommendations ⚡',
                 backBtn: '← Back',
                 playerTierLabel: '⭐ Player Tier',
-                tierNote: '💡 <strong>Note:</strong> Enter the TOTAL values you see in the game (which includes the tier bonus). The tier bonus will be subtracted from WHITE attributes when calculating drill effectiveness (179 threshold).',
+                tierNote: '💡 <strong>Note:</strong> Enter the TOTAL values you see in the game (which includes the tier bonus). The tier bonus will be subtracted from WHITE attributes when calculating drill effectiveness (179.5 threshold).',
 
                 // Recommendations
                 recsTitle: 'Training Recommendations',
@@ -735,7 +735,7 @@
                 summary: 'Summary',
                 playerTier: 'Player Tier:',
                 tierIncluded: 'included in WHITE attributes',
-                tierSubtracted: 'Tier bonus subtracted from calculation (base values used for 179 threshold)',
+                tierSubtracted: 'Tier bonus subtracted from calculation (base values used for 179.5 threshold)',
                 effectiveDrills: 'Effective Drills:',
                 whiteOnly: 'White-only:',
                 mixed: 'Mixed:',
@@ -1050,7 +1050,7 @@
             "Legendary": 160
         };
 
-        const EFFECTIVENESS_THRESHOLD = 179;
+        const EFFECTIVENESS_THRESHOLD = 179.5;
 
         let selectedRole = null;
         let playerStats = {};
@@ -1194,14 +1194,54 @@
                     potential: EFFECTIVENESS_THRESHOLD - analysis.overallAvg
                 };
 
-                if (analysis.overallAvg >= EFFECTIVENESS_THRESHOLD) {
+                // Check if NEXT drill would push drill's attributes average beyond 179.5
+                const tierBonus = PLAYER_TIERS[playerTier];
+                const statsAfterDrill = { ...playerStats };
+                for (const attr of attrs) {
+                    if (attr in statsAfterDrill) {
+                        statsAfterDrill[attr] += 1;
+                    }
+                }
+
+                // Calculate drill's attributes average AFTER doing the drill
+                let drillSumAfter = 0;
+                let drillCountAfter = 0;
+                for (const attr of attrs) {
+                    if (attr in statsAfterDrill) {
+                        const value = whiteAttrs.has(attr) ? statsAfterDrill[attr] - tierBonus : statsAfterDrill[attr];
+                        drillSumAfter += value;
+                        drillCountAfter++;
+                    }
+                }
+                const drillAvgAfter = drillCountAfter > 0 ? drillSumAfter / drillCountAfter : null;
+
+                if (drillAvgAfter && drillAvgAfter > 179.5) {
                     ineffective.push(drill);
-                } else if (analysis.whiteAttrs.length > 0 && analysis.grayAttrs.length === 0) {
-                    whiteDrills.push(drill);
-                } else if (analysis.grayAttrs.length > 0 && analysis.whiteAttrs.length === 0) {
-                    grayDrills.push(drill);
                 } else {
-                    mixedDrills.push(drill);
+                    // Check if drill would push PLAYER'S OVERALL RATING above 179.5
+                    const tierBonus = PLAYER_TIERS[playerTier];
+                    const attributes = selectedRole === 'GK' ? GK_ATTRIBUTES : REGULAR_ATTRIBUTES;
+                    const statsAfter = { ...playerStats };
+
+                    // Simulate drill effect
+                    for (const attr of attrs) {
+                        if (attr in statsAfter) {
+                            statsAfter[attr] += 1; // +1 for both white and gray (gray +0.5 rounds up to 1)
+                        }
+                    }
+
+                    const ratingAfter = calculateOverallRatingWithStats(whiteAttrs, tierBonus, statsAfter, attributes).base;
+
+                    if (ratingAfter > 179.5) {
+                        // Drill would push overall rating above 179.5, mark as ineffective
+                        ineffective.push(drill);
+                    } else if (analysis.whiteAttrs.length > 0 && analysis.grayAttrs.length === 0) {
+                        whiteDrills.push(drill);
+                    } else if (analysis.grayAttrs.length > 0 && analysis.whiteAttrs.length === 0) {
+                        grayDrills.push(drill);
+                    } else {
+                        mixedDrills.push(drill);
+                    }
                 }
             });
 
@@ -1549,19 +1589,44 @@
                     }
                     if (hasHighGray) continue;
 
-                    // Check drill effectiveness: AVERAGE of trained attributes must be < 179
-                    let attrSum = 0;
-                    let attrCount = 0;
+                    // Check if NEXT drill would push drill's attributes average beyond 179.5
+                    const statsAfterNextDrill = { ...simulatedStats };
                     for (const attr of attrs) {
-                        if (attr in simulatedStats) {
-                            const value = whiteAttrs.has(attr) ? simulatedStats[attr] - tierBonus : simulatedStats[attr];
-                            attrSum += value;
-                            attrCount++;
+                        if (attr in statsAfterNextDrill) {
+                            if (whiteAttrs.has(attr)) {
+                                statsAfterNextDrill[attr] += 1;
+                            } else {
+                                statsAfterNextDrill[attr] += 1;
+                            }
                         }
                     }
-                    if (attrCount === 0) continue;
-                    const drillAverage = attrSum / attrCount;
-                    if (drillAverage >= EFFECTIVENESS_THRESHOLD) continue; // Drill is ineffective
+
+                    let drillSumAfter = 0;
+                    let drillCountAfter = 0;
+                    for (const attr of attrs) {
+                        if (attr in statsAfterNextDrill) {
+                            const value = whiteAttrs.has(attr) ? statsAfterNextDrill[attr] - tierBonus : statsAfterNextDrill[attr];
+                            drillSumAfter += value;
+                            drillCountAfter++;
+                        }
+                    }
+                    if (drillCountAfter === 0) continue;
+                    const drillAvgAfter = drillSumAfter / drillCountAfter;
+                    if (drillAvgAfter > 179.5) continue; // Drill would push its attributes beyond 179.5
+
+                    // Check if drill would push PLAYER'S OVERALL RATING above 179.5
+                    const statsAfterDrill = { ...simulatedStats };
+                    for (const attr of attrs) {
+                        if (attr in statsAfterDrill) {
+                            if (whiteAttrs.has(attr)) {
+                                statsAfterDrill[attr] += 1;
+                            } else {
+                                statsAfterDrill[attr] += 1; // Gray +0.5 rounds up to 1
+                            }
+                        }
+                    }
+                    const overallAfterDrill = calculateOverallRatingWithStats(whiteAttrs, tierBonus, statsAfterDrill, attributes).base;
+                    if (overallAfterDrill > 179.5) continue; // Would push overall above 179.5, skip this drill
 
                     // Find minimum white value
                     let minWhite = Infinity;
@@ -1855,4 +1920,5 @@
     </script>
 </body>
 </html>
+
 
