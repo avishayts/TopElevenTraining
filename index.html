@@ -549,7 +549,7 @@
                 getRecsBtn: 'קבל המלצות ⚡',
                 backBtn: '→ חזור',
                 playerTierLabel: '⭐ דרגת שחקן',
-                tierNote: '💡 <strong>הערה:</strong> הזן את הערכים הכוללים שאתה רואה במשחק (הכולל את בונוס הדרגה). בונוס הדרגה יופחת ממאפיינים לבנים בעת חישוב יעילות תרגיל (סף 180).',
+                tierNote: '💡 <strong>הערה:</strong> הזן את הערכים הכוללים שאתה רואה במשחק (הכולל את בונוס הדרגה). בונוס הדרגה יופחת ממאפיינים לבנים בעת חישוב יעילות תרגיל (סף 179).',
 
                 // Recommendations
                 recsTitle: 'המלצות אימון',
@@ -562,7 +562,7 @@
                 summary: 'סיכום',
                 playerTier: 'דרגת שחקן:',
                 tierIncluded: 'נכלל במאפיינים לבנים',
-                tierSubtracted: 'בונוס הדרגה מופחת מהחישוב (ערכי בסיס משמשים לסף 180)',
+                tierSubtracted: 'בונוס הדרגה מופחת מהחישוב (ערכי בסיס משמשים לסף 179)',
                 effectiveDrills: 'תרגילים יעילים:',
                 whiteOnly: 'לבן בלבד:',
                 mixed: 'מעורב:',
@@ -722,7 +722,7 @@
                 getRecsBtn: 'Get Recommendations ⚡',
                 backBtn: '← Back',
                 playerTierLabel: '⭐ Player Tier',
-                tierNote: '💡 <strong>Note:</strong> Enter the TOTAL values you see in the game (which includes the tier bonus). The tier bonus will be subtracted from WHITE attributes when calculating drill effectiveness (180 threshold).',
+                tierNote: '💡 <strong>Note:</strong> Enter the TOTAL values you see in the game (which includes the tier bonus). The tier bonus will be subtracted from WHITE attributes when calculating drill effectiveness (179 threshold).',
 
                 // Recommendations
                 recsTitle: 'Training Recommendations',
@@ -735,7 +735,7 @@
                 summary: 'Summary',
                 playerTier: 'Player Tier:',
                 tierIncluded: 'included in WHITE attributes',
-                tierSubtracted: 'Tier bonus subtracted from calculation (base values used for 180 threshold)',
+                tierSubtracted: 'Tier bonus subtracted from calculation (base values used for 179 threshold)',
                 effectiveDrills: 'Effective Drills:',
                 whiteOnly: 'White-only:',
                 mixed: 'Mixed:',
@@ -1549,7 +1549,7 @@
                     }
                     if (hasHighGray) continue;
 
-                    // Check drill effectiveness: AVERAGE of trained attributes must be < 180
+                    // Check drill effectiveness: AVERAGE of trained attributes must be < 179
                     let attrSum = 0;
                     let attrCount = 0;
                     for (const attr of attrs) {
@@ -1561,7 +1561,7 @@
                     }
                     if (attrCount === 0) continue;
                     const drillAverage = attrSum / attrCount;
-                    if (drillAverage >= 180) continue; // Drill is ineffective
+                    if (drillAverage >= EFFECTIVENESS_THRESHOLD) continue; // Drill is ineffective
 
                     // Find minimum white value
                     let minWhite = Infinity;
