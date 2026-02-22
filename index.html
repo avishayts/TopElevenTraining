@@ -430,6 +430,57 @@
             color: #666;
         }
 
+        .filter-panel {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 20px;
+        }
+
+        .filter-panel-title {
+            font-weight: 600;
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .filter-attr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 6px;
+        }
+
+        .filter-attr-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            padding: 5px 8px;
+            border-radius: 6px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .filter-attr-item:hover {
+            border-color: #667eea;
+        }
+
+        .filter-attr-item input[type="checkbox"] {
+            width: 15px;
+            height: 15px;
+            cursor: pointer;
+            accent-color: #667eea;
+            flex-shrink: 0;
+        }
+
+        .filter-attr-item.is-white {
+            border-color: #c3e6cb;
+            background: #f1f9f3;
+        }
+
         @media (max-width: 600px) {
             .attr-grid {
                 grid-template-columns: 1fr;
@@ -484,6 +535,11 @@
             <button class="btn" onclick="generateFullPlan()" style="margin-bottom: 20px; background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);">
                 <span id="fullPlanBtn">📋 תוכנית אימונים מלאה (BETA - אל תסתמך!)</span>
             </button>
+
+            <div class="filter-panel" id="attrFilterPanel">
+                <div class="filter-panel-title" id="filterPanelTitle">🔍 סנן לפי מאפיינים</div>
+                <div class="filter-attr-grid" id="filterAttrGrid"></div>
+            </div>
 
             <div id="recommendationsList"></div>
 
@@ -553,6 +609,7 @@
 
                 // Recommendations
                 recsTitle: 'המלצות אימון',
+                filterPanelTitle: '🔍 סנן לפי מאפיינים',
                 updateBtn: 'עדכן מאפיינים',
                 viewBtn: 'צפה במאפיינים',
                 fullPlanBtn: '📋 תוכנית אימונים מלאה (BETA)',
@@ -571,7 +628,7 @@
                 priority1: '⭐ עדיפות 1: מאפיינים לבנים בלבד',
                 priority2: '⚡ עדיפות 2: מעורב (לבן + אפור)',
                 priority3: '◾ עדיפות 3: מאפיינים אפורים בלבד',
-                noDrills: '✓ כל התרגילים לא יעילים!<br>השחקן מאומן מאוד.',
+                noDrills: 'לא נמצאו תרגילים',
 
                 // View Attributes
                 viewAttrTitle: 'מאפיינים נוכחיים',
@@ -726,6 +783,7 @@
 
                 // Recommendations
                 recsTitle: 'Training Recommendations',
+                filterPanelTitle: '🔍 Filter by Attributes',
                 updateBtn: 'Update Attributes',
                 viewBtn: 'View Attributes',
                 fullPlanBtn: '📋 Full Training Plan (BETA)',
@@ -744,7 +802,7 @@
                 priority1: '⭐ Priority 1: WHITE Attributes Only',
                 priority2: '⚡ Priority 2: Mixed (White + Gray)',
                 priority3: '◾ Priority 3: GRAY Attributes Only',
-                noDrills: '✓ All drills are ineffective!<br>Player is highly trained.',
+                noDrills: 'Drills were not found',
 
                 // View Attributes
                 viewAttrTitle: 'Current Attributes',
@@ -929,6 +987,7 @@
             document.getElementById('fullPlanTitle').textContent = t('fullPlanTitle');
             document.getElementById('roleLabel4').textContent = t('roleLabel');
             document.getElementById('backToPlanRecsBtn').textContent = t('backToPlanRecsBtn');
+            document.getElementById('filterPanelTitle').textContent = t('filterPanelTitle');
 
             // Re-render current section content if needed
             if (selectedRole) {
@@ -1055,6 +1114,11 @@
         let selectedRole = null;
         let playerStats = {};
         let playerTier = "None";
+
+        // Cached drill lists for filter re-rendering
+        let cachedWhiteDrills = [];
+        let cachedMixedDrills = [];
+        let cachedGrayDrills = [];
 
         function initRoleGrid() {
             const roleGrid = document.getElementById('roleGrid');
@@ -1287,27 +1351,12 @@
                 </div>
             `;
 
-            const list = document.getElementById('recommendationsList');
-            list.innerHTML = '';
-
-            if (whiteDrills.length > 0) {
-                list.innerHTML += `<div class="priority-header white">${t('priority1')}</div>`;
-                whiteDrills.forEach(drill => list.appendChild(createDrillCard(drill, 'white')));
-            }
-
-            if (mixedDrills.length > 0) {
-                list.innerHTML += `<div class="priority-header mixed">${t('priority2')}</div>`;
-                mixedDrills.forEach(drill => list.appendChild(createDrillCard(drill, 'mixed')));
-            }
-
-            if (grayDrills.length > 0) {
-                list.innerHTML += `<div class="priority-header gray">${t('priority3')}</div>`;
-                grayDrills.forEach(drill => list.appendChild(createDrillCard(drill, 'gray')));
-            }
-
-            if (whiteDrills.length === 0 && mixedDrills.length === 0 && grayDrills.length === 0) {
-                list.innerHTML = `<div class="no-drills">${t('noDrills')}</div>`;
-            }
+            // Cache drill lists and build filter
+            cachedWhiteDrills = whiteDrills;
+            cachedMixedDrills = mixedDrills;
+            cachedGrayDrills = grayDrills;
+            buildFilterCheckboxes();
+            renderDrillList();
         }
 
         function analyzeDrill(drillAttrs, whiteAttrs) {
@@ -2064,6 +2113,76 @@
                 base: count > 0 ? totalBase / count : 0,
                 withBonus: count > 0 ? totalWithBonus / count : 0
             };
+        }
+
+        function buildFilterCheckboxes() {
+            const whiteAttrs = new Set(ROLE_WHITES[selectedRole]);
+            const attributes = selectedRole === 'GK' ? GK_ATTRIBUTES : REGULAR_ATTRIBUTES;
+            const grid = document.getElementById('filterAttrGrid');
+            grid.innerHTML = '';
+
+            attributes.forEach(attr => {
+                const isWhite = whiteAttrs.has(attr);
+                const label = document.createElement('label');
+                label.className = 'filter-attr-item' + (isWhite ? ' is-white' : '');
+                label.innerHTML = `
+                    <input type="checkbox" id="fattr_${attr}" onchange="onAttrFilterChange()">
+                    ${t('attrs.' + attr)}${isWhite ? ' ⭐' : ''}
+                `;
+                grid.appendChild(label);
+            });
+        }
+
+        function onAttrFilterChange() {
+            renderDrillList();
+        }
+
+        function getCheckedAttrs() {
+            const attributes = selectedRole === 'GK' ? GK_ATTRIBUTES : REGULAR_ATTRIBUTES;
+            return new Set(attributes.filter(attr => {
+                const cb = document.getElementById('fattr_' + attr);
+                return cb && cb.checked;
+            }));
+        }
+
+        function drillMatchesFilter(drill, checkedAttrs) {
+            // No attributes checked = show all
+            if (checkedAttrs.size === 0) return true;
+            // AND logic: drill must train every checked attribute
+            const allDrillAttrs = new Set([...(drill.whiteAttrs || []), ...(drill.grayAttrs || [])]);
+            return [...checkedAttrs].every(a => allDrillAttrs.has(a));
+        }
+
+        function renderDrillList() {
+            const checkedAttrs = getCheckedAttrs();
+
+            const filtered = (drills) => drills.filter(d => drillMatchesFilter(d, checkedAttrs));
+
+            const whiteDrills = filtered(cachedWhiteDrills);
+            const mixedDrills = filtered(cachedMixedDrills);
+            const grayDrills = filtered(cachedGrayDrills);
+
+            const list = document.getElementById('recommendationsList');
+            list.innerHTML = '';
+
+            if (whiteDrills.length > 0) {
+                list.innerHTML += `<div class="priority-header white">${t('priority1')}</div>`;
+                whiteDrills.forEach(drill => list.appendChild(createDrillCard(drill, 'white')));
+            }
+
+            if (mixedDrills.length > 0) {
+                list.innerHTML += `<div class="priority-header mixed">${t('priority2')}</div>`;
+                mixedDrills.forEach(drill => list.appendChild(createDrillCard(drill, 'mixed')));
+            }
+
+            if (grayDrills.length > 0) {
+                list.innerHTML += `<div class="priority-header gray">${t('priority3')}</div>`;
+                grayDrills.forEach(drill => list.appendChild(createDrillCard(drill, 'gray')));
+            }
+
+            if (whiteDrills.length === 0 && mixedDrills.length === 0 && grayDrills.length === 0) {
+                list.innerHTML = `<div class="no-drills">${t('noDrills')}</div>`;
+            }
         }
 
         function backToRecommendations() {
