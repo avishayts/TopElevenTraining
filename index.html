@@ -1315,6 +1315,7 @@
             const grayInDrill = [];
             const whiteValues = [];
             const grayValues = [];
+            const whiteValuesWithBonus = []; // For display
             const tierBonus = PLAYER_TIERS[playerTier];
 
             drillAttrs.forEach(attr => {
@@ -1324,6 +1325,7 @@
                     whiteInDrill.push(attr);
                     const baseValue = playerStats[attr] - tierBonus;
                     whiteValues.push(baseValue);
+                    whiteValuesWithBonus.push(playerStats[attr]); // Store actual value for display
                 } else {
                     grayInDrill.push(attr);
                     grayValues.push(playerStats[attr]);
@@ -1331,6 +1333,7 @@
             });
 
             const whiteAvg = whiteValues.length > 0 ? whiteValues.reduce((a, b) => a + b, 0) / whiteValues.length : null;
+            const whiteAvgDisplay = whiteValuesWithBonus.length > 0 ? whiteValuesWithBonus.reduce((a, b) => a + b, 0) / whiteValuesWithBonus.length : null;
             const grayAvg = grayValues.length > 0 ? grayValues.reduce((a, b) => a + b, 0) / grayValues.length : null;
             const allValues = [...whiteValues, ...grayValues];
             const overallAvg = allValues.length > 0 ? allValues.reduce((a, b) => a + b, 0) / allValues.length : null;
@@ -1341,7 +1344,7 @@
             const whitePotential = totalGrowthParts > 0 ? (whiteInDrill.length * 2 / totalGrowthParts) * totalPotential : 0;
             const grayPotential = totalGrowthParts > 0 ? (grayInDrill.length * 1 / totalGrowthParts) * totalPotential : 0;
 
-            return { whiteAttrs: whiteInDrill, grayAttrs: grayInDrill, whiteAvg, grayAvg, overallAvg, whitePotential, grayPotential, totalPotential };
+            return { whiteAttrs: whiteInDrill, grayAttrs: grayInDrill, whiteAvg, whiteAvgDisplay, grayAvg, overallAvg, whitePotential, grayPotential, totalPotential };
         }
 
         function calculateOverallRating(whiteAttrs, tierBonus) {
@@ -1375,16 +1378,182 @@
             const card = document.createElement('div');
             card.className = `drill-card ${type} category-${drill.category}`;
 
+            const whiteAttrs = new Set(ROLE_WHITES[selectedRole]);
+            const tierBonus = PLAYER_TIERS[playerTier];
+
+            // Calculate ACTUAL potential that brings average to 179.5 (with safety checks)
+            let actualWhitePotentialInt = 0;
+            let actualGrayPotentialInt = 0;
+
+            if (drill.whiteAttrs && drill.grayAttrs && playerStats && Object.keys(playerStats).length > 0) {
+                let whiteCount = drill.whiteAttrs.length;
+                let grayCount = drill.grayAttrs.length;
+                let whiteBaseSum = 0;
+                let grayBaseSum = 0;
+
+                drill.whiteAttrs.forEach(attr => {
+                    if (attr in playerStats) {
+                        whiteBaseSum += playerStats[attr] - tierBonus;
+                    }
+                });
+
+                drill.grayAttrs.forEach(attr => {
+                    if (attr in playerStats) {
+                        grayBaseSum += playerStats[attr];
+                    }
+                });
+
+                const totalAttrs = whiteCount + grayCount;
+                if (totalAttrs > 0) {
+                    const initialCalc = (EFFECTIVENESS_THRESHOLD * totalAttrs - whiteBaseSum - grayBaseSum) / (whiteCount + grayCount / 2);
+                    let testWhite = Math.floor(initialCalc);
+
+                    // Iterate to find max white that keeps avg <= 179.5
+                    let testAvg;
+                    do {
+                        const testGray = Math.ceil(testWhite / 2); // Gray is always ceil(white/2)
+                        testAvg = (whiteBaseSum + whiteCount * testWhite + grayBaseSum + grayCount * testGray) / totalAttrs;
+
+                        if (testAvg > EFFECTIVENESS_THRESHOLD && testWhite > 0) {
+                            testWhite--;
+                        } else {
+                            actualWhitePotentialInt = testWhite;
+                            actualGrayPotentialInt = testGray;
+                            break;
+                        }
+                    } while (testWhite > 0);
+                }
+            }
+
             let statsHtml = '';
             if (type === 'white') {
-                statsHtml = `${t('whiteAvg')} ${drill.whiteAvg.toFixed(1)} | ${t('potential')} +${drill.whitePotential.toFixed(1)}`;
+                // Show base average (without bonus) to match potential calculation
+                const baseAvgNote = tierBonus > 0 ? ` (${currentLang === 'he' ? 'ממוצע עם בונוס' : 'avg with bonus'}: ${drill.whiteAvgDisplay.toFixed(1)})` : '';
+                const potentialToShow = actualWhitePotentialInt > 0 ? actualWhitePotentialInt : drill.whitePotential.toFixed(1);
+                statsHtml = `${t('whiteAvg')} ${drill.whiteAvg.toFixed(1)}${baseAvgNote} | ${t('potential')} +${potentialToShow}`;
             } else if (type === 'mixed') {
-                const whiteStr = drill.whiteAvg ? `${t('white')} ${drill.whiteAvg.toFixed(1)}` : '';
+                const baseAvgNote = tierBonus > 0 && drill.whiteAvg ? ` (${currentLang === 'he' ? 'עם בונוס' : 'w/bonus'}: ${drill.whiteAvgDisplay.toFixed(1)})` : '';
+                const whiteStr = drill.whiteAvg ? `${t('white')} ${drill.whiteAvg.toFixed(1)}${baseAvgNote}` : '';
                 const grayStr = drill.grayAvg ? `${t('gray')} ${drill.grayAvg.toFixed(1)}` : '';
-                statsHtml = `${whiteStr} | ${grayStr} | ${t('overall')} ${drill.overallAvg.toFixed(1)} | ${t('whitePotential')} +${drill.whitePotential.toFixed(1)} | ${t('grayPotential')} +${drill.grayPotential.toFixed(1)}`;
+                // Show ACTUAL potentials being applied
+                const whitePotentialToShow = actualWhitePotentialInt > 0 ? actualWhitePotentialInt : drill.whitePotential.toFixed(1);
+                const grayPotentialToShow = actualGrayPotentialInt > 0 ? actualGrayPotentialInt : Math.ceil(drill.whitePotential / 2); // Ceiling for gray
+                statsHtml = `${whiteStr} | ${grayStr} | ${t('whitePotential')} +${whitePotentialToShow} | ${t('grayPotential')} +${grayPotentialToShow}`;
             } else {
-                statsHtml = `${t('grayAvg')} ${drill.grayAvg.toFixed(1)} | ${t('overall')} ${drill.overallAvg.toFixed(1)} | ${t('potential')} +${drill.grayPotential.toFixed(1)}`;
+                const grayPotentialToShow = actualGrayPotentialInt > 0 ? actualGrayPotentialInt : drill.grayPotential.toFixed(1);
+                statsHtml = `${t('grayAvg')} ${drill.grayAvg.toFixed(1)} | ${t('overall')} ${drill.overallAvg.toFixed(1)} | ${t('potential')} +${grayPotentialToShow}`;
             }
+
+            // Calculate attribute changes - calculate potential to reach 179.5 average
+            let changesHtml = '<div style="margin-top: 10px; padding: 10px; background: rgba(102, 126, 234, 0.08); border-radius: 6px; font-size: 12px;">';
+            changesHtml += '<div style="font-weight: 600; margin-bottom: 6px; color: #667eea;">' + (currentLang === 'he' ? 'שינויים במאפיינים:' : 'Attribute Changes:') + '</div>';
+
+            const allAttrs = [...drill.whiteAttrs, ...drill.grayAttrs];
+            let totalFinalBase = 0;
+            let attrCount = 0;
+
+            // Calculate potential to bring average to 179.5, considering 2:1 growth ratio
+            let whiteCount = drill.whiteAttrs.length;
+            let grayCount = drill.grayAttrs.length;
+            let whiteBaseSum = 0;
+            let grayBaseSum = 0;
+
+            drill.whiteAttrs.forEach(attr => {
+                if (attr in playerStats) {
+                    whiteBaseSum += playerStats[attr] - tierBonus;
+                }
+            });
+
+            drill.grayAttrs.forEach(attr => {
+                if (attr in playerStats) {
+                    grayBaseSum += playerStats[attr];
+                }
+            });
+
+            // Solve for white potential accounting for ceiling on gray
+            // We need: (whiteBaseSum + W*x + grayBaseSum + G*ceil(x/2)) / (W + G) = 179.5
+            const totalAttrs = whiteCount + grayCount;
+            let whitePotentialInt = 0;
+            let grayPotentialInt = 0;
+
+            if (totalAttrs > 0) {
+                // Calculate assuming floor/2 for gray
+                const initialCalc = (EFFECTIVENESS_THRESHOLD * totalAttrs - whiteBaseSum - grayBaseSum) / (whiteCount + grayCount / 2);
+                let testWhite = Math.floor(initialCalc);
+
+                // Iterate to find max white that keeps avg <= 179.5
+                let testAvg;
+                do {
+                    const testGray = Math.ceil(testWhite / 2); // Gray is always ceil(white/2)
+                    testAvg = (whiteBaseSum + whiteCount * testWhite + grayBaseSum + grayCount * testGray) / totalAttrs;
+
+                    if (testAvg > EFFECTIVENESS_THRESHOLD && testWhite > 0) {
+                        testWhite--;
+                    } else {
+                        whitePotentialInt = testWhite;
+                        grayPotentialInt = testGray;
+                        break;
+                    }
+                } while (testWhite > 0);
+            }
+
+            allAttrs.forEach(attr => {
+                const current = playerStats[attr];
+                const isWhite = whiteAttrs.has(attr);
+                const currentBase = isWhite ? current - tierBonus : current;
+
+                // Use calculated potential
+                const potentialInt = isWhite ? whitePotentialInt : grayPotentialInt;
+                const finalValue = current + potentialInt;
+                const finalBase = currentBase + potentialInt;
+
+                totalFinalBase += finalBase;
+                attrCount++;
+
+                changesHtml += `<div style="margin-bottom: 3px; color: ${isWhite ? '#28a745' : '#6c757d'}; font-weight: ${isWhite ? '600' : '400'};">`;
+                changesHtml += `${t('attrs.' + attr)}${isWhite ? ' ⭐' : ''}: ${current} + ${potentialInt} = ${finalValue}`;
+                changesHtml += '</div>';
+            });
+
+            // Calculate total leftover
+            const avgFinalBase = attrCount > 0 ? totalFinalBase / attrCount : 0;
+            const totalLeftover = EFFECTIVENESS_THRESHOLD - avgFinalBase;
+
+            // Calculate EXACT total points (integers only) that can be added to reach 179.5
+            const targetTotal = EFFECTIVENESS_THRESHOLD * attrCount;
+            const currentTotal = totalFinalBase;
+            const totalPointsToAdd = Math.ceil(targetTotal - currentTotal);
+
+            changesHtml += '<div style="margin-top: 10px; padding-top: 10px; border-top: 2px solid #667eea; font-weight: 600; color: #667eea;">';
+            changesHtml += `${currentLang === 'he' ? 'סה״כ נותר' : 'TOTAL Leftover'}: 179.5 - ${avgFinalBase.toFixed(1)} = ${totalLeftover.toFixed(1)}`;
+            changesHtml += '<br>';
+            changesHtml += `<span style="font-size: 11px; font-weight: 500;">${currentLang === 'he' ? 'סה״כ נקודות שניתן להוסיף:' : 'Total points to add:'} ${totalPointsToAdd}</span>`;
+            changesHtml += '</div>';
+
+            changesHtml += '</div>';
+
+            // Calculate leftover to average using BASE values (without tier bonus for whites)
+            let totalSum = 0;
+            let totalCount = 0;
+            allAttrs.forEach(attr => {
+                if (attr in playerStats) {
+                    const isWhite = whiteAttrs.has(attr);
+                    // Use base value for whites (subtract tier bonus)
+                    const baseValue = isWhite ? playerStats[attr] - tierBonus : playerStats[attr];
+                    totalSum += baseValue;
+                    totalCount++;
+                }
+            });
+            const totalAvg = totalCount > 0 ? totalSum / totalCount : 0;
+            const leftover = EFFECTIVENESS_THRESHOLD - totalAvg;
+
+            let leftoverHtml = '<div style="margin-top: 12px; margin-bottom: 12px; padding: 8px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; font-size: 12px;">';
+            if (currentLang === 'he') {
+                leftoverHtml = '<div style="margin-top: 12px; margin-bottom: 12px; padding: 8px; background: #fff3cd; border-right: 4px solid #ffc107; border-radius: 4px; font-size: 12px;">';
+            }
+            leftoverHtml += `<strong>${currentLang === 'he' ? 'ממוצע נוכחי של התרגיל:' : 'Current drill avg:'}</strong> <span style="color: #856404; font-weight: 600;">${totalAvg.toFixed(1)}</span> | `;
+            leftoverHtml += `<strong>${currentLang === 'he' ? 'נותר עד 179.5:' : 'Left to 179.5:'}</strong> <span style="color: #856404; font-weight: 600;">${leftover.toFixed(1)}</span>`;
+            leftoverHtml += '</div>';
 
             let attrsHtml = '';
             if (type === 'white') {
@@ -1402,8 +1571,10 @@
                     <span class="badge badge-category badge-${drill.category}">${t(drill.category)}</span>
                     <span class="badge badge-difficulty">${t('difficulties.' + drill.difficulty)}</span>
                 </h3>
+                ${leftoverHtml}
                 <div class="drill-stats">${statsHtml}</div>
                 <div class="drill-attrs">${attrsHtml}</div>
+                ${changesHtml}
             `;
 
             return card;
