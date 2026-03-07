@@ -1087,8 +1087,6 @@
             document.getElementById('saveBtn').textContent = t('saveBtn');
             document.getElementById('cancelBtn').textContent = t('cancelBtn');
             document.getElementById('fullPlanBtn').textContent = t('fullPlanBtn');
-            document.getElementById('betaWarning').textContent = t('betaWarning');
-            document.getElementById('betaWarningText').textContent = t('betaWarningText');
             document.getElementById('fullPlanTitle').textContent = t('fullPlanTitle');
             document.getElementById('roleLabel4').textContent = t('roleLabel');
             document.getElementById('backToPlanRecsBtn').textContent = t('backToPlanRecsBtn');
@@ -1102,12 +1100,25 @@
             document.getElementById('activePlayerLabel').textContent = t('activePlayerLabel');
             renderSavedPlayersList();
 
-            // Re-render current section content if needed
+            // Re-render dynamic content for the currently active section
             if (selectedRole) {
                 document.getElementById('selectedRoleName').textContent = selectedRole;
                 document.getElementById('recRoleName').textContent = selectedRole;
                 document.getElementById('viewRoleName').textContent = selectedRole;
                 document.getElementById('planRoleName').textContent = selectedRole;
+
+                const activeId = document.querySelector('.section.active')?.id;
+                if (activeId === 'recommendationsSection') {
+                    displayRecommendations();
+                } else if (activeId === 'attributesSection') {
+                    initAttributesForm();
+                } else if (activeId === 'updateSection') {
+                    updateAttributes();
+                } else if (activeId === 'viewAttributesSection') {
+                    viewAttributes();
+                } else if (activeId === 'fullPlanSection') {
+                    generateFullPlan();
+                }
             }
         }
 
