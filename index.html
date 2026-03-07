@@ -481,6 +481,67 @@
             background: #f1f9f3;
         }
 
+        .player-manager {
+            background: #f0f4ff;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 20px;
+        }
+
+        .player-manager-title {
+            font-weight: 600;
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .player-manager-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .player-manager-row select {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            background: white;
+        }
+
+        .btn-sm {
+            padding: 10px 14px;
+            font-size: 14px;
+            width: auto;
+            margin-top: 0;
+            flex-shrink: 0;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        }
+
+        .active-player-badge {
+            background: #e7f3ff;
+            border: 2px solid #2196F3;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 13px;
+            color: #0d47a1;
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        .active-player-badge.show {
+            display: block;
+        }
+
         @media (max-width: 600px) {
             .attr-grid {
                 grid-template-columns: 1fr;
@@ -503,6 +564,14 @@
         <!-- Role Selection Section -->
         <div id="roleSection" class="section active">
             <h2 style="margin-bottom: 15px;" id="roleTitle">בחר תפקיד שחקן</h2>
+            <div class="player-manager">
+                <div class="player-manager-title" id="savedPlayersTitle">👥 שחקנים שמורים</div>
+                <div class="player-manager-row">
+                    <select id="savedPlayerSelect"></select>
+                    <button class="btn btn-success btn-sm" onclick="onLoadPlayer()"><span id="loadPlayerBtn">טען</span></button>
+                    <button class="btn btn-danger btn-sm" onclick="onDeletePlayer()"><span id="deletePlayerBtn">מחק</span></button>
+                </div>
+            </div>
             <div class="instruction-box">
                 <span id="roleInstruction">👆 <strong>שלב 1:</strong> לחץ על תפקיד כדי לבחור אותו</span>
             </div>
@@ -530,6 +599,16 @@
             <h2 style="margin-bottom: 15px;" id="recsTitle">המלצות אימון</h2>
             <p style="margin-bottom: 20px; color: #666;"><span id="roleLabel2">תפקיד:</span> <strong id="recRoleName"></strong></p>
 
+            <div class="active-player-badge" id="activePlayerBadge">
+                <span id="activePlayerLabel">שחקן פעיל:</span> <strong id="activePlayerName"></strong>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-success" onclick="updateAttributes()"><span id="updateBtn">עדכן מאפיינים</span></button>
+                <button class="btn btn-secondary" onclick="viewAttributes()"><span id="viewBtn">צפה במאפיינים</span></button>
+            </div>
+            <button class="btn btn-save" id="savePlayerBtnEl" onclick="onSavePlayer()" style="margin-top: 10px;"><span id="savePlayerBtn">💾 שמור שחקן</span></button>
+            <button class="btn" onclick="backToRoles()" style="margin-top: 10px; margin-bottom: 20px;"><span id="startOverBtn">→ התחל מחדש</span></button>
+
             <div class="summary-box" id="summaryBox"></div>
 
             <button class="btn" onclick="generateFullPlan()" style="margin-bottom: 20px; background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);">
@@ -542,12 +621,6 @@
             </div>
 
             <div id="recommendationsList"></div>
-
-            <div class="action-buttons">
-                <button class="btn btn-success" onclick="updateAttributes()"><span id="updateBtn">עדכן מאפיינים</span></button>
-                <button class="btn btn-secondary" onclick="viewAttributes()"><span id="viewBtn">צפה במאפיינים</span></button>
-            </div>
-            <button class="btn" onclick="backToRoles()" style="margin-top: 10px;"><span id="startOverBtn">→ התחל מחדש</span></button>
         </div>
 
         <!-- Full Training Plan Section -->
@@ -759,7 +832,23 @@
                     'Stay in Lane': 'שמירה על מסלול',
                     'Contact Play': 'משחק מגע',
                     'Passes Before Shot': 'מסירות לפני בעיטה לשער'
-                }
+                },
+
+                // Player manager
+                savedPlayersTitle: '👥 שחקנים שמורים',
+                noSavedPlayers: '-- אין שחקנים שמורים --',
+                selectPlayer: '-- בחר שחקן --',
+                loadPlayerBtn: 'טען',
+                deletePlayerBtn: 'מחק',
+                savePlayerBtn: '💾 שמור שחקן',
+                activePlayerLabel: 'שחקן פעיל:',
+                savePlayerPrompt: 'הזן שם לשחקן:',
+                playerSaved: '✓ נשמר!',
+                playerAutoSaved: '✓ נשמר אוטומטית!',
+                noPlayerToSave: 'אין נתוני שחקן לשמירה',
+                selectPlayerToLoad: 'אנא בחר שחקן לטעינה',
+                selectPlayerToDelete: 'אנא בחר שחקן למחיקה',
+                confirmDelete: 'למחוק את השחקן'
             },
             en: {
                 // Header
@@ -933,7 +1022,23 @@
                     'Stay in Lane': 'Stay in Lane',
                     'Contact Play': 'Contact Play',
                     'Passes Before Shot': 'Passes Before Shot'
-                }
+                },
+
+                // Player manager
+                savedPlayersTitle: '👥 Saved Players',
+                noSavedPlayers: '-- No saved players --',
+                selectPlayer: '-- Select Player --',
+                loadPlayerBtn: 'Load',
+                deletePlayerBtn: 'Delete',
+                savePlayerBtn: '💾 Save Player',
+                activePlayerLabel: 'Active Player:',
+                savePlayerPrompt: 'Enter player name:',
+                playerSaved: '✓ Saved!',
+                playerAutoSaved: '✓ Auto-saved!',
+                noPlayerToSave: 'No player data to save',
+                selectPlayerToLoad: 'Please select a player to load',
+                selectPlayerToDelete: 'Please select a player to delete',
+                confirmDelete: 'Delete player'
             }
         };
 
@@ -988,6 +1093,14 @@
             document.getElementById('roleLabel4').textContent = t('roleLabel');
             document.getElementById('backToPlanRecsBtn').textContent = t('backToPlanRecsBtn');
             document.getElementById('filterPanelTitle').textContent = t('filterPanelTitle');
+
+            // Player manager
+            document.getElementById('savedPlayersTitle').textContent = t('savedPlayersTitle');
+            document.getElementById('loadPlayerBtn').textContent = t('loadPlayerBtn');
+            document.getElementById('deletePlayerBtn').textContent = t('deletePlayerBtn');
+            document.getElementById('savePlayerBtn').textContent = t('savePlayerBtn');
+            document.getElementById('activePlayerLabel').textContent = t('activePlayerLabel');
+            renderSavedPlayersList();
 
             // Re-render current section content if needed
             if (selectedRole) {
@@ -1119,6 +1232,149 @@
         let cachedWhiteDrills = [];
         let cachedMixedDrills = [];
         let cachedGrayDrills = [];
+
+        // Player save/load
+        const STORAGE_KEY = 'FTO_players';
+        let currentPlayerName = null;
+
+        function loadSavedPlayers() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function writeSavedPlayers(players) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(players));
+        }
+
+        function renderSavedPlayersList() {
+            const players = loadSavedPlayers();
+            const select = document.getElementById('savedPlayerSelect');
+            const names = Object.keys(players).sort();
+
+            select.innerHTML = '';
+            if (names.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = t('noSavedPlayers');
+                select.appendChild(opt);
+            } else {
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = '';
+                defaultOpt.textContent = t('selectPlayer');
+                select.appendChild(defaultOpt);
+                names.forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = `${name} (${players[name].role})`;
+                    select.appendChild(opt);
+                });
+            }
+        }
+
+        function onLoadPlayer() {
+            const select = document.getElementById('savedPlayerSelect');
+            const name = select.value;
+            if (!name) {
+                alert(t('selectPlayerToLoad'));
+                return;
+            }
+
+            const players = loadSavedPlayers();
+            const data = players[name];
+            if (!data || !ROLE_WHITES[data.role]) return;
+
+            selectedRole = data.role;
+            playerStats = { ...data.stats };
+            playerTier = data.tier || 'None';
+            currentPlayerName = name;
+
+            document.querySelectorAll('.role-btn').forEach(btn => {
+                btn.classList.remove('selected');
+                if (btn.textContent === selectedRole) btn.classList.add('selected');
+            });
+            document.getElementById('selectedRoleBox').classList.add('show');
+            document.getElementById('selectedRoleText').textContent = selectedRole;
+
+            updateActivePlayerBadge();
+            showSection('recommendationsSection');
+            document.getElementById('recRoleName').textContent = selectedRole;
+            displayRecommendations();
+        }
+
+        function onDeletePlayer() {
+            const select = document.getElementById('savedPlayerSelect');
+            const name = select.value;
+            if (!name) {
+                alert(t('selectPlayerToDelete'));
+                return;
+            }
+            if (!confirm(`${t('confirmDelete')} "${name}"?`)) return;
+
+            const players = loadSavedPlayers();
+            delete players[name];
+            writeSavedPlayers(players);
+
+            if (currentPlayerName === name) {
+                currentPlayerName = null;
+                updateActivePlayerBadge();
+            }
+            renderSavedPlayersList();
+        }
+
+        function onSavePlayer() {
+            if (!selectedRole || Object.keys(playerStats).length === 0) {
+                alert(t('noPlayerToSave'));
+                return;
+            }
+
+            let name = currentPlayerName;
+            if (!name) {
+                name = prompt(t('savePlayerPrompt'));
+                if (!name || !name.trim()) return;
+                name = name.trim();
+            }
+
+            savePlayerData(name);
+            currentPlayerName = name;
+            updateActivePlayerBadge();
+            renderSavedPlayersList();
+            flashSaveButton(t('playerSaved'));
+        }
+
+        function savePlayerData(name) {
+            const players = loadSavedPlayers();
+            players[name] = { role: selectedRole, stats: { ...playerStats }, tier: playerTier };
+            writeSavedPlayers(players);
+        }
+
+        function updateActivePlayerBadge() {
+            const badge = document.getElementById('activePlayerBadge');
+            const nameEl = document.getElementById('activePlayerName');
+            if (currentPlayerName) {
+                badge.classList.add('show');
+                nameEl.textContent = currentPlayerName;
+            } else {
+                badge.classList.remove('show');
+            }
+        }
+
+        function flashSaveButton(msg) {
+            const btn = document.getElementById('savePlayerBtnEl');
+            if (!btn) return;
+            const origText = document.getElementById('savePlayerBtn').textContent;
+            const origBg = btn.style.background;
+            document.getElementById('savePlayerBtn').textContent = msg;
+            btn.style.background = '#28a745';
+            setTimeout(() => {
+                document.getElementById('savePlayerBtn').textContent = origText;
+                btn.style.background = origBg;
+            }, 1500);
+        }
+
+
 
         function initRoleGrid() {
             const roleGrid = document.getElementById('roleGrid');
@@ -1705,6 +1961,10 @@
             if (updated) {
                 showSection('recommendationsSection');
                 displayRecommendations();
+                if (currentPlayerName) {
+                    savePlayerData(currentPlayerName);
+                    flashSaveButton(t('playerAutoSaved'));
+                }
             } else {
                 alert(currentLang === 'he' ? 'לא בוצעו שינויים. הזן לפחות ערך חדש אחד או שנה דרגה.' : 'No changes made. Enter at least one new value or change tier.');
             }
@@ -2194,8 +2454,10 @@
             selectedRole = null;
             playerStats = {};
             playerTier = "None";
+            currentPlayerName = null;
             document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('selected'));
             document.getElementById('selectedRoleBox').classList.remove('show');
+            updateActivePlayerBadge();
         }
 
         function showSection(sectionId) {
@@ -2207,6 +2469,7 @@
         }
 
         initRoleGrid();
+        renderSavedPlayersList();
     </script>
 </body>
 </html>
