@@ -1546,11 +1546,7 @@
                 }
                 const drillAvgAfter = drillCountAfter > 0 ? drillSumAfter / drillCountAfter : null;
 
-                const hasMaxedAttr = attrs.some(attr => attr in playerStats && playerStats[attr] >= 340);
-
-                if (hasMaxedAttr) {
-                    ineffective.push(drill);
-                } else if (drillAvgAfter && drillAvgAfter > 179.5) {
+                if (drillAvgAfter && drillAvgAfter > 179.5) {
                     ineffective.push(drill);
                 } else {
                     // Check if drill would push PLAYER'S OVERALL RATING above 179.5
@@ -1725,17 +1721,14 @@
 
                 const totalAttrs = whiteCount + grayCount;
                 if (totalAttrs > 0) {
-                    const allDrillAttrs = [...drill.whiteAttrs, ...drill.grayAttrs];
-                    const drillMaxGain = Math.min(
-                        ...allDrillAttrs.filter(a => a in playerStats).map(a => 340 - playerStats[a])
-                    );
-
                     const initialCalc = (EFFECTIVENESS_THRESHOLD * totalAttrs - whiteBaseSum - grayBaseSum) / (whiteCount + grayCount / 2);
-                    let testWhite = Math.min(Math.floor(initialCalc), drillMaxGain);
+                    let testWhite = Math.floor(initialCalc);
 
+                    // Iterate to find max white that keeps avg <= 179.5
+                    let testAvg;
                     do {
-                        const testGray = Math.min(Math.ceil(testWhite / 2), drillMaxGain);
-                        const testAvg = (whiteBaseSum + whiteCount * testWhite + grayBaseSum + grayCount * testGray) / totalAttrs;
+                        const testGray = Math.ceil(testWhite / 2); // Gray is always ceil(white/2)
+                        testAvg = (whiteBaseSum + whiteCount * testWhite + grayBaseSum + grayCount * testGray) / totalAttrs;
 
                         if (testAvg > EFFECTIVENESS_THRESHOLD && testWhite > 0) {
                             testWhite--;
@@ -1793,25 +1786,22 @@
                 }
             });
 
-            // The bottleneck rule: all attrs in the drill grow by the same amount,
-            // so the attr with the least headroom to 340 caps everyone.
-            const drillMaxGain = Math.min(
-                ...allAttrs.filter(a => a in playerStats).map(a => 340 - playerStats[a])
-            );
-
-            // Solve for white potential accounting for ceiling on gray AND the 340 bottleneck
+            // Solve for white potential accounting for ceiling on gray
             // We need: (whiteBaseSum + W*x + grayBaseSum + G*ceil(x/2)) / (W + G) = 179.5
             const totalAttrs = whiteCount + grayCount;
             let whitePotentialInt = 0;
             let grayPotentialInt = 0;
 
             if (totalAttrs > 0) {
+                // Calculate assuming floor/2 for gray
                 const initialCalc = (EFFECTIVENESS_THRESHOLD * totalAttrs - whiteBaseSum - grayBaseSum) / (whiteCount + grayCount / 2);
-                let testWhite = Math.min(Math.floor(initialCalc), drillMaxGain);
+                let testWhite = Math.floor(initialCalc);
 
+                // Iterate to find max white that keeps avg <= 179.5
+                let testAvg;
                 do {
-                    const testGray = Math.min(Math.ceil(testWhite / 2), drillMaxGain);
-                    const testAvg = (whiteBaseSum + whiteCount * testWhite + grayBaseSum + grayCount * testGray) / totalAttrs;
+                    const testGray = Math.ceil(testWhite / 2); // Gray is always ceil(white/2)
+                    testAvg = (whiteBaseSum + whiteCount * testWhite + grayBaseSum + grayCount * testGray) / totalAttrs;
 
                     if (testAvg > EFFECTIVENESS_THRESHOLD && testWhite > 0) {
                         testWhite--;
@@ -1828,6 +1818,7 @@
                 const isWhite = whiteAttrs.has(attr);
                 const currentBase = isWhite ? current - tierBonus : current;
 
+                // Use calculated potential
                 const potentialInt = isWhite ? whitePotentialInt : grayPotentialInt;
                 const finalValue = current + potentialInt;
                 const finalBase = currentBase + potentialInt;
@@ -2078,10 +2069,6 @@
                     }
 
                     if (whiteInDrill.length === 0) continue; // Must train at least one white
-
-                    // Skip if any attribute trained by this drill is at 340 (capped)
-                    const hasMaxedAttr = attrs.some(attr => attr in simulatedStats && simulatedStats[attr] >= 340);
-                    if (hasMaxedAttr) continue;
 
                     // Skip if any gray is >= 120
                     let hasHighGray = false;
