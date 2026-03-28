@@ -1721,23 +1721,52 @@
 
                 const totalAttrs = whiteCount + grayCount;
                 if (totalAttrs > 0) {
-                    const initialCalc = (EFFECTIVENESS_THRESHOLD * totalAttrs - whiteBaseSum - grayBaseSum) / (whiteCount + grayCount / 2);
-                    let testWhite = Math.floor(initialCalc);
+                    const fixedAttrs = new Set();
 
-                    // Iterate to find max white that keeps avg <= 179.5
-                    let testAvg;
-                    do {
-                        const testGray = Math.ceil(testWhite / 2); // Gray is always ceil(white/2)
-                        testAvg = (whiteBaseSum + whiteCount * testWhite + grayBaseSum + grayCount * testGray) / totalAttrs;
+                    for (let pass = 0; pass < 20; pass++) {
+                        let fixedSum = 0;
+                        let freeWhiteCount = 0, freeGrayCount = 0;
+                        let freeWhiteBaseSum = 0, freeGrayBaseSum = 0;
 
-                        if (testAvg > EFFECTIVENESS_THRESHOLD && testWhite > 0) {
-                            testWhite--;
-                        } else {
-                            actualWhitePotentialInt = testWhite;
-                            actualGrayPotentialInt = testGray;
-                            break;
-                        }
-                    } while (testWhite > 0);
+                        drill.whiteAttrs.forEach(attr => {
+                            if (!(attr in playerStats)) return;
+                            const base = playerStats[attr] - tierBonus;
+                            if (fixedAttrs.has(attr)) { fixedSum += base + (340 - playerStats[attr]); }
+                            else { freeWhiteBaseSum += base; freeWhiteCount++; }
+                        });
+                        drill.grayAttrs.forEach(attr => {
+                            if (!(attr in playerStats)) return;
+                            if (fixedAttrs.has(attr)) { fixedSum += 340; }
+                            else { freeGrayBaseSum += playerStats[attr]; freeGrayCount++; }
+                        });
+
+                        const freeTotal = freeWhiteCount + freeGrayCount;
+                        if (freeTotal === 0) { actualWhitePotentialInt = 0; actualGrayPotentialInt = 0; break; }
+
+                        const targetFreeGain = EFFECTIVENESS_THRESHOLD * totalAttrs - fixedSum - freeWhiteBaseSum - freeGrayBaseSum;
+                        const initialCalc = targetFreeGain / (freeWhiteCount + freeGrayCount / 2);
+                        let testWhite = Math.max(0, Math.floor(initialCalc));
+
+                        do {
+                            const testGray = Math.ceil(testWhite / 2);
+                            const testSum = freeWhiteCount * testWhite + freeGrayCount * testGray;
+                            if (testSum > targetFreeGain && testWhite > 0) { testWhite--; }
+                            else { actualWhitePotentialInt = testWhite; actualGrayPotentialInt = testGray; break; }
+                        } while (testWhite > 0);
+
+                        let anyNewlyCapped = false;
+                        drill.whiteAttrs.forEach(attr => {
+                            if (!fixedAttrs.has(attr) && attr in playerStats && playerStats[attr] + actualWhitePotentialInt > 340) {
+                                fixedAttrs.add(attr); anyNewlyCapped = true;
+                            }
+                        });
+                        drill.grayAttrs.forEach(attr => {
+                            if (!fixedAttrs.has(attr) && attr in playerStats && playerStats[attr] + actualGrayPotentialInt > 340) {
+                                fixedAttrs.add(attr); anyNewlyCapped = true;
+                            }
+                        });
+                        if (!anyNewlyCapped) break;
+                    }
                 }
             }
 
@@ -1786,31 +1815,80 @@
                 }
             });
 
-            // Solve for white potential accounting for ceiling on gray
-            // We need: (whiteBaseSum + W*x + grayBaseSum + G*ceil(x/2)) / (W + G) = 179.5
+            // Solve for potential, excluding attrs already at 340 (they contribute fixed value).
+            // Iteratively solve: at each pass, find which attrs would exceed 340 at the current
+            // solution, fix them, and re-solve with the remainder until stable.
             const totalAttrs = whiteCount + grayCount;
             let whitePotentialInt = 0;
             let grayPotentialInt = 0;
 
             if (totalAttrs > 0) {
-                // Calculate assuming floor/2 for gray
-                const initialCalc = (EFFECTIVENESS_THRESHOLD * totalAttrs - whiteBaseSum - grayBaseSum) / (whiteCount + grayCount / 2);
-                let testWhite = Math.floor(initialCalc);
+                // Track which attrs are "fixed" (capped) vs free in each iteration
+                const fixedAttrs = new Set(); // attrs whose gain is fixed at (340 - current)
 
-                // Iterate to find max white that keeps avg <= 179.5
-                let testAvg;
-                do {
-                    const testGray = Math.ceil(testWhite / 2); // Gray is always ceil(white/2)
-                    testAvg = (whiteBaseSum + whiteCount * testWhite + grayBaseSum + grayCount * testGray) / totalAttrs;
+                for (let pass = 0; pass < 20; pass++) {
+                    // Sum of fixed contributions (base value + their capped gain)
+                    let fixedSum = 0;
+                    let freeWhiteCount = 0, freeGrayCount = 0;
+                    let freeWhiteBaseSum = 0, freeGrayBaseSum = 0;
 
-                    if (testAvg > EFFECTIVENESS_THRESHOLD && testWhite > 0) {
-                        testWhite--;
-                    } else {
-                        whitePotentialInt = testWhite;
-                        grayPotentialInt = testGray;
-                        break;
-                    }
-                } while (testWhite > 0);
+                    drill.whiteAttrs.forEach(attr => {
+                        if (!(attr in playerStats)) return;
+                        const base = playerStats[attr] - tierBonus;
+                        if (fixedAttrs.has(attr)) {
+                            fixedSum += base + (340 - playerStats[attr]);
+                        } else {
+                            freeWhiteBaseSum += base;
+                            freeWhiteCount++;
+                        }
+                    });
+                    drill.grayAttrs.forEach(attr => {
+                        if (!(attr in playerStats)) return;
+                        if (fixedAttrs.has(attr)) {
+                            fixedSum += playerStats[attr] + (340 - playerStats[attr]); // = 340
+                        } else {
+                            freeGrayBaseSum += playerStats[attr];
+                            freeGrayCount++;
+                        }
+                    });
+
+                    const freeTotal = freeWhiteCount + freeGrayCount;
+                    if (freeTotal === 0) { whitePotentialInt = 0; grayPotentialInt = 0; break; }
+
+                    // Solve for free attrs: (fixedSum + freeWhiteBaseSum + W*x + freeGrayBaseSum + G*ceil(x/2)) / totalAttrs = 179.5
+                    const targetFreeGain = EFFECTIVENESS_THRESHOLD * totalAttrs - fixedSum - freeWhiteBaseSum - freeGrayBaseSum;
+                    const initialCalc = targetFreeGain / (freeWhiteCount + freeGrayCount / 2);
+                    let testWhite = Math.max(0, Math.floor(initialCalc));
+
+                    do {
+                        const testGray = Math.ceil(testWhite / 2);
+                        const testSum = freeWhiteCount * testWhite + freeGrayCount * testGray;
+                        if (testSum > targetFreeGain && testWhite > 0) {
+                            testWhite--;
+                        } else {
+                            whitePotentialInt = testWhite;
+                            grayPotentialInt = testGray;
+                            break;
+                        }
+                    } while (testWhite > 0);
+
+                    // Check if any free attr would now exceed 340; if so, fix it and re-solve
+                    let anyNewlyCapped = false;
+                    drill.whiteAttrs.forEach(attr => {
+                        if (!fixedAttrs.has(attr) && attr in playerStats && playerStats[attr] + whitePotentialInt > 340) {
+                            fixedAttrs.add(attr);
+                            anyNewlyCapped = true;
+                        }
+                    });
+                    drill.grayAttrs.forEach(attr => {
+                        if (!fixedAttrs.has(attr) && attr in playerStats && playerStats[attr] + grayPotentialInt > 340) {
+                            fixedAttrs.add(attr);
+                            anyNewlyCapped = true;
+                        }
+                    });
+
+                    if (!anyNewlyCapped) break; // stable solution
+                }
             }
 
             allAttrs.forEach(attr => {
@@ -1818,8 +1896,9 @@
                 const isWhite = whiteAttrs.has(attr);
                 const currentBase = isWhite ? current - tierBonus : current;
 
-                // Use calculated potential
-                const potentialInt = isWhite ? whitePotentialInt : grayPotentialInt;
+                // Each attr is capped individually at 340
+                const rawPotential = isWhite ? whitePotentialInt : grayPotentialInt;
+                const potentialInt = Math.min(rawPotential, 340 - current);
                 const finalValue = current + potentialInt;
                 const finalBase = currentBase + potentialInt;
 
@@ -2140,16 +2219,16 @@
 
                 if (!bestDrill) break; // No more drills
 
-                // Apply drill: +1 for whites, +0.5 for grays (rounded up when applied)
+                // Apply drill: +1 for whites, +0.5 for grays (rounded up when applied), capped at 340
                 for (const attr of bestDrill.attrs) {
                     if (attr in simulatedStats) {
                         if (whiteAttrs.has(attr)) {
-                            simulatedStats[attr] += 1; // White attributes increase by 1
+                            simulatedStats[attr] = Math.min(340, simulatedStats[attr] + 1);
                         } else {
                             // Gray attributes increase by 0.5, tracked with fractional part
                             grayFractional[attr] = (grayFractional[attr] || 0) + 0.5;
-                            // Round up and apply
-                            simulatedStats[attr] = Math.floor(playerStats[attr]) + Math.ceil(grayFractional[attr]);
+                            // Round up and apply, capped at 340
+                            simulatedStats[attr] = Math.min(340, Math.floor(playerStats[attr]) + Math.ceil(grayFractional[attr]));
                         }
                     }
                 }
@@ -2273,16 +2352,16 @@
             });
 
             drillsToDisplay.forEach((item, index) => {
-                // Apply this drill's effect to cumulative stats (+1 for whites, +0.5 for grays rounded up)
+                // Apply this drill's effect to cumulative stats (+1 for whites, +0.5 for grays rounded up), capped at 340
                 item.drill.attrs.forEach(attr => {
                     if (attr in cumulativeStats) {
                         if (whiteAttrs.has(attr)) {
-                            cumulativeStats[attr] += item.count * 1; // Whites increase by 1 per drill
+                            cumulativeStats[attr] = Math.min(340, cumulativeStats[attr] + item.count * 1);
                         } else {
                             // Grays increase by 0.5 per drill, tracked with fractional part
                             displayGrayFractional[attr] = (displayGrayFractional[attr] || 0) + (item.count * 0.5);
-                            // Round up and apply
-                            cumulativeStats[attr] = Math.floor(playerStats[attr]) + Math.ceil(displayGrayFractional[attr]);
+                            // Round up and apply, capped at 340
+                            cumulativeStats[attr] = Math.min(340, Math.floor(playerStats[attr]) + Math.ceil(displayGrayFractional[attr]));
                         }
                     }
                 });
@@ -2323,8 +2402,10 @@
                             const value = cumulativeStats[attr];
                             const isBeingTrained = item.drill.attrs.includes(attr);
                             const isWhite = whiteAttrs.has(attr);
-                            // Calculate increase: +1 for whites, +0.5 (rounded up) for grays
-                            const increase = isBeingTrained ? (isWhite ? item.count * 1 : Math.ceil(item.count * 0.5)) : 0;
+                            // Calculate increase: +1 for whites, +0.5 (rounded up) for grays, capped at 340
+                            const prevValue = value - (isBeingTrained ? (isWhite ? item.count * 1 : Math.ceil(item.count * 0.5)) : 0);
+                            const rawIncrease = isBeingTrained ? (isWhite ? item.count * 1 : Math.ceil(item.count * 0.5)) : 0;
+                            const increase = Math.max(0, Math.min(rawIncrease, 340 - prevValue));
 
                             attrsHtml += `
                                 <div style="padding: 4px 6px; background: ${isWhite ? '#f1f9f3' : '#f8f9fa'}; border-radius: 4px; ${isBeingTrained ? 'border: 2px solid #667eea;' : ''}">
