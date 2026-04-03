@@ -166,41 +166,162 @@
             border-color: #667eea;
         }
 
-        .role-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-            gap: 10px;
+        /* ── Pitch layout ── */
+        .pitch-wrapper {
             margin-bottom: 20px;
         }
 
-        .role-btn {
-            padding: 15px 8px;
-            background: #f8f9fa;
-            border: 3px solid #e0e0e0;
+        /* Status bar above the pitch */
+        .pitch-status {
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            min-height: 28px;
+            margin-bottom: 8px;
+            color: #667eea;
+            padding: 4px 8px;
+            border-radius: 20px;
+            transition: all 0.2s;
+        }
+        .pitch-status.valid {
+            background: #d4edda;
+            color: #155724;
+        }
+        .pitch-status.invalid {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .pitch-status.empty {
+            color: #999;
+            background: none;
+        }
+
+        /* The pitch itself */
+        .pitch {
+            position: relative;
+            background:
+                repeating-linear-gradient(
+                    180deg,
+                    rgba(255,255,255,0.04) 0px,
+                    rgba(255,255,255,0.04) 40px,
+                    transparent 40px,
+                    transparent 80px
+                ),
+                linear-gradient(160deg, #2d7a2d 0%, #3a9e3a 40%, #2d7a2d 100%);
+            border-radius: 12px;
+            border: 3px solid rgba(255,255,255,0.25);
+            padding: 14px 10px;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.25), 0 4px 20px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .pitch::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-50%);
+        }
+        .pitch::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 70px;
+            height: 70px;
+            border: 2px solid rgba(255,255,255,0.25);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .pitch-row {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 2;
+        }
+        .pitch-row:last-child { margin-bottom: 0; }
+
+        /* Individual position button */
+        .pos-btn {
+            background: rgba(30, 30, 50, 0.82);
+            border: 2.5px solid rgba(255,255,255,0.35);
             border-radius: 10px;
+            color: white;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            padding: 10px 0;
+            min-width: 64px;
+            max-width: 80px;
+            flex: 1;
             cursor: pointer;
             text-align: center;
-            font-weight: 600;
-            transition: all 0.3s;
-            font-size: 14px;
+            transition: all 0.18s ease;
             touch-action: manipulation;
-            min-height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+        }
+        .pos-btn:active { transform: scale(0.93); }
+        .pos-btn:hover {
+            border-color: rgba(255,255,255,0.7);
+            background: rgba(60, 60, 90, 0.9);
+        }
+        /* Dimmed = not compatible with current selection */
+        .pos-btn.dimmed {
+            opacity: 0.35;
+            cursor: not-allowed;
         }
 
-        .role-btn:active {
-            transform: scale(0.95);
+        /* ST — red */
+        .pos-btn[data-pos="ST"].selected {
+            background: linear-gradient(135deg, #e53935 0%, #c62828 100%);
+            border-color: #ff8a80;
+            box-shadow: 0 4px 18px rgba(229,57,53,0.6);
+            transform: scale(1.08);
         }
 
-        .role-btn.selected {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-color: #667eea;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-            transform: scale(1.05);
+        /* Attacking/mid rows — yellow */
+        .pos-btn[data-pos="AML"].selected,
+        .pos-btn[data-pos="AMC"].selected,
+        .pos-btn[data-pos="AMR"].selected,
+        .pos-btn[data-pos="ML"].selected,
+        .pos-btn[data-pos="MC"].selected,
+        .pos-btn[data-pos="MR"].selected,
+        .pos-btn[data-pos="DMC"].selected {
+            background: linear-gradient(135deg, #ffe600 0%, #ffd000 100%);
+            border-color: #fff59d;
+            box-shadow: 0 4px 18px rgba(255,230,0,0.7);
+            transform: scale(1.08);
+            color: #1a1a1a;
         }
+
+        /* Defenders — light green */
+        .pos-btn[data-pos="DL"].selected,
+        .pos-btn[data-pos="DC"].selected,
+        .pos-btn[data-pos="DR"].selected {
+            background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+            border-color: #b9f6ca;
+            box-shadow: 0 4px 18px rgba(102,187,106,0.65);
+            transform: scale(1.08);
+        }
+
+        /* GK — light blue */
+        .pos-btn.gk { background: rgba(15, 60, 15, 0.85); border-color: rgba(100,220,100,0.5); }
+        .pos-btn.gk.selected {
+            background: linear-gradient(135deg, #42a5f5 0%, #1e88e5 100%);
+            border-color: #b3e5fc;
+            box-shadow: 0 4px 18px rgba(66,165,245,0.65);
+            transform: scale(1.08);
+        }
+
+        /* Legacy role-grid hidden */
+        .role-grid { display: none; }
+        .role-btn { display: none; }
 
         .drill-card {
             background: #f8f9fa;
@@ -578,7 +699,41 @@
             <div class="selected-role-display" id="selectedRoleBox">
                 <span id="selectedPrefix">✓ נבחר:</span> <span id="selectedRoleText"></span>
             </div>
+
+            <!-- Pitch UI -->
+            <div class="pitch-wrapper">
+                <div class="pitch-status empty" id="pitchStatus">בחר עמדה</div>
+                <div class="pitch" id="mainPitch">
+                    <div class="pitch-row">
+                        <div class="pos-btn" data-pos="ST" onclick="onPitchPos('ST')">ST</div>
+                    </div>
+                    <div class="pitch-row">
+                        <div class="pos-btn" data-pos="AMR" onclick="onPitchPos('AMR')">AMR</div>
+                        <div class="pos-btn" data-pos="AMC" onclick="onPitchPos('AMC')">AMC</div>
+                        <div class="pos-btn" data-pos="AML" onclick="onPitchPos('AML')">AML</div>
+                    </div>
+                    <div class="pitch-row">
+                        <div class="pos-btn" data-pos="MR" onclick="onPitchPos('MR')">MR</div>
+                        <div class="pos-btn" data-pos="MC" onclick="onPitchPos('MC')">MC</div>
+                        <div class="pos-btn" data-pos="ML" onclick="onPitchPos('ML')">ML</div>
+                    </div>
+                    <div class="pitch-row">
+                        <div class="pos-btn" data-pos="DMC" onclick="onPitchPos('DMC')">DMC</div>
+                    </div>
+                    <div class="pitch-row">
+                        <div class="pos-btn" data-pos="DR" onclick="onPitchPos('DR')">DR</div>
+                        <div class="pos-btn" data-pos="DC" onclick="onPitchPos('DC')">DC</div>
+                        <div class="pos-btn" data-pos="DL" onclick="onPitchPos('DL')">DL</div>
+                    </div>
+                    <div class="pitch-row">
+                        <div class="pos-btn gk" data-pos="GK" onclick="onPitchPos('GK')">GK</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden legacy grid (JS still builds it for compat) -->
             <div id="roleGrid" class="role-grid"></div>
+
             <button class="btn" onclick="continueToAttributes()"><span id="continueBtn">המשך ←</span></button>
         </div>
 
@@ -1387,10 +1542,107 @@
 
 
 
+        // ── Pitch UI — multi-select with live combo matching ──────────
+        const SINGLE_POSITIONS = ['GK','DL','DC','DR','DMC','ML','MC','MR','AML','AMC','AMR','ST'];
+
+        // Build a lookup: sorted key → role name
+        // e.g. "DC + DL" stored as key "DC|DL"
+        const COMBO_LOOKUP = {};
+        Object.keys(ROLE_WHITES).forEach(role => {
+            const parts = role.split(' + ').map(p => p.trim()).sort();
+            COMBO_LOOKUP[parts.join('|')] = role;
+        });
+
+        // Which positions can still be added to the current selection and yield a valid combo?
+        function validNextPositions(selected) {
+            if (selected.length === 0) return new Set(SINGLE_POSITIONS);
+            const valid = new Set();
+            // check every possible combo
+            Object.keys(ROLE_WHITES).forEach(role => {
+                const parts = role.split(' + ').map(p => p.trim());
+                // selected must be a subset of parts
+                if (selected.every(s => parts.includes(s))) {
+                    parts.forEach(p => { if (!selected.includes(p)) valid.add(p); });
+                }
+            });
+            return valid;
+        }
+
+        // Given a sorted array of positions, find the exact matching role (or null)
+        function findRole(selected) {
+            if (selected.length === 0) return null;
+            const key = [...selected].sort().join('|');
+            return COMBO_LOOKUP[key] || null;
+        }
+
+        let pitchSelected = []; // currently tapped positions
+
+        function onPitchPos(pos) {
+            const idx = pitchSelected.indexOf(pos);
+            if (idx !== -1) {
+                // Already selected → deselect it
+                pitchSelected.splice(idx, 1);
+            } else {
+                // Not selected — only add if it's in the valid set
+                const valid = validNextPositions(pitchSelected);
+                if (!valid.has(pos)) return; // dimmed, ignore tap
+                pitchSelected.push(pos);
+            }
+            updatePitchUI();
+        }
+
+        function updatePitchUI() {
+            const validNext = validNextPositions(pitchSelected);
+            const matchedRole = findRole(pitchSelected);
+
+            // Update button states
+            document.querySelectorAll('.pos-btn').forEach(btn => {
+                const p = btn.dataset.pos;
+                const isSel = pitchSelected.includes(p);
+                const isValid = pitchSelected.length === 0 || validNext.has(p) || isSel;
+                btn.classList.toggle('selected', isSel);
+                btn.classList.toggle('dimmed', !isSel && !isValid);
+            });
+
+            // Update status bar + role state (NO call to selectRole to avoid recursion)
+            const status = document.getElementById('pitchStatus');
+            if (pitchSelected.length === 0) {
+                status.textContent = currentLang === 'he' ? 'בחר עמדה' : 'Select a position';
+                status.className = 'pitch-status empty';
+                selectedRole = null;
+                document.getElementById('selectedRoleBox').classList.remove('show');
+            } else if (matchedRole) {
+                status.textContent = '✓ ' + matchedRole;
+                status.className = 'pitch-status valid';
+                // Set role directly without going through selectRole
+                selectedRole = matchedRole;
+                document.getElementById('selectedRoleBox').classList.add('show');
+                document.getElementById('selectedRoleText').textContent = matchedRole;
+            } else {
+                const label = currentLang === 'he' ? 'בחור: ' : 'Selected: ';
+                status.textContent = label + pitchSelected.join(' + ');
+                status.className = 'pitch-status invalid';
+                selectedRole = null;
+                document.getElementById('selectedRoleBox').classList.remove('show');
+            }
+        }
+
+        function clearPitchHighlights() {
+            pitchSelected = [];
+            document.querySelectorAll('.pos-btn').forEach(b => {
+                b.classList.remove('selected', 'dimmed');
+            });
+            const status = document.getElementById('pitchStatus');
+            if (status) {
+                status.textContent = currentLang === 'he' ? 'בחר עמדה' : 'Select a position';
+                status.className = 'pitch-status empty';
+            }
+        }
+
         function initRoleGrid() {
+            // Build hidden legacy grid for JS compat
             const roleGrid = document.getElementById('roleGrid');
             const roles = Object.keys(ROLE_WHITES);
-
             roles.forEach(role => {
                 const btn = document.createElement('div');
                 btn.className = 'role-btn';
@@ -1405,10 +1657,24 @@
 
             document.querySelectorAll('.role-btn').forEach(btn => {
                 btn.classList.remove('selected');
-                if (btn.textContent === role) {
-                    btn.classList.add('selected');
-                }
+                if (btn.textContent === role) btn.classList.add('selected');
             });
+
+            // Sync pitch visually for single positions (no recursion)
+            const parts = role.split(' + ').map(p => p.trim());
+            const allOnPitch = parts.every(p => SINGLE_POSITIONS.includes(p));
+            if (allOnPitch) {
+                pitchSelected = parts;
+                document.querySelectorAll('.pos-btn').forEach(btn => {
+                    btn.classList.toggle('selected', parts.includes(btn.dataset.pos));
+                    btn.classList.remove('dimmed');
+                });
+                const status = document.getElementById('pitchStatus');
+                if (status) {
+                    status.textContent = '✓ ' + role;
+                    status.className = 'pitch-status valid';
+                }
+            }
 
             document.getElementById('selectedRoleBox').classList.add('show');
             document.getElementById('selectedRoleText').textContent = role;
@@ -2553,6 +2819,7 @@
             currentPlayerName = null;
             document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('selected'));
             document.getElementById('selectedRoleBox').classList.remove('show');
+            clearPitchHighlights();
             updateActivePlayerBadge();
         }
 
