@@ -98,19 +98,7 @@
         }
 
         .selected-role-display {
-            background: #d4edda;
-            border: 2px solid #28a745;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-weight: 600;
-            color: #155724;
-            display: none;
-        }
-
-        .selected-role-display.show {
-            display: block;
+            display: none !important;
         }
 
         .btn {
@@ -198,6 +186,7 @@
 
         /* The pitch itself */
         .pitch {
+            direction: ltr;
             position: relative;
             background:
                 repeating-linear-gradient(
@@ -672,6 +661,63 @@
                 grid-template-columns: repeat(3, 1fr);
             }
         }
+        /* Custom alert modal */
+        .custom-alert-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+        .custom-alert-overlay.show {
+            display: flex;
+        }
+        .custom-alert-box {
+            background: white;
+            border-radius: 14px;
+            padding: 24px 20px;
+            max-width: 320px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: popIn 0.2s ease;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.85); opacity: 0; }
+            to   { transform: scale(1);    opacity: 1; }
+        }
+        .custom-alert-msg {
+            font-size: 15px;
+            color: #333;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            white-space: pre-line;
+        }
+        .custom-alert-ok {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 36px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .custom-alert-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+        }
+        .custom-alert-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
     </style>
 </head>
 <body dir="rtl">
@@ -708,22 +754,22 @@
                         <div class="pos-btn" data-pos="ST" onclick="onPitchPos('ST')">ST</div>
                     </div>
                     <div class="pitch-row">
-                        <div class="pos-btn" data-pos="AMR" onclick="onPitchPos('AMR')">AMR</div>
-                        <div class="pos-btn" data-pos="AMC" onclick="onPitchPos('AMC')">AMC</div>
                         <div class="pos-btn" data-pos="AML" onclick="onPitchPos('AML')">AML</div>
+                        <div class="pos-btn" data-pos="AMC" onclick="onPitchPos('AMC')">AMC</div>
+                        <div class="pos-btn" data-pos="AMR" onclick="onPitchPos('AMR')">AMR</div>
                     </div>
                     <div class="pitch-row">
-                        <div class="pos-btn" data-pos="MR" onclick="onPitchPos('MR')">MR</div>
-                        <div class="pos-btn" data-pos="MC" onclick="onPitchPos('MC')">MC</div>
                         <div class="pos-btn" data-pos="ML" onclick="onPitchPos('ML')">ML</div>
+                        <div class="pos-btn" data-pos="MC" onclick="onPitchPos('MC')">MC</div>
+                        <div class="pos-btn" data-pos="MR" onclick="onPitchPos('MR')">MR</div>
                     </div>
                     <div class="pitch-row">
                         <div class="pos-btn" data-pos="DMC" onclick="onPitchPos('DMC')">DMC</div>
                     </div>
                     <div class="pitch-row">
-                        <div class="pos-btn" data-pos="DR" onclick="onPitchPos('DR')">DR</div>
-                        <div class="pos-btn" data-pos="DC" onclick="onPitchPos('DC')">DC</div>
                         <div class="pos-btn" data-pos="DL" onclick="onPitchPos('DL')">DL</div>
+                        <div class="pos-btn" data-pos="DC" onclick="onPitchPos('DC')">DC</div>
+                        <div class="pos-btn" data-pos="DR" onclick="onPitchPos('DR')">DR</div>
                     </div>
                     <div class="pitch-row">
                         <div class="pos-btn gk" data-pos="GK" onclick="onPitchPos('GK')">GK</div>
@@ -809,9 +855,63 @@
         </div>
     </div>
 
+    <!-- Custom alert modal -->
+    <div class="custom-alert-overlay" id="customAlertOverlay">
+        <div class="custom-alert-box">
+            <div class="custom-alert-msg" id="customAlertMsg"></div>
+            <input class="custom-alert-input" id="customAlertInput" type="text" style="display:none;" />
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button class="custom-alert-ok" onclick="confirmCustomAlert()">OK</button>
+                <button class="custom-alert-ok" id="customAlertCancel" onclick="closeCustomAlert()" style="display:none; background:#6c757d;">ביטול</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Language state
         let currentLang = 'he';
+
+        function showAlert(msg) {
+            document.getElementById('customAlertMsg').textContent = msg;
+            document.getElementById('customAlertInput').style.display = 'none';
+            document.getElementById('customAlertCancel').style.display = 'none';
+            document.getElementById('customAlertOverlay').classList.add('show');
+            customAlertCallback = null;
+        }
+        let customAlertCallback = null;
+        function showConfirm(msg, onOk) {
+            document.getElementById('customAlertMsg').textContent = msg;
+            document.getElementById('customAlertInput').style.display = 'none';
+            document.getElementById('customAlertCancel').style.display = 'inline-block';
+            document.getElementById('customAlertOverlay').classList.add('show');
+            customAlertCallback = onOk;
+        }
+        function showPrompt(msg, onOk) {
+            document.getElementById('customAlertMsg').textContent = msg;
+            const input = document.getElementById('customAlertInput');
+            input.style.display = 'block';
+            input.value = '';
+            document.getElementById('customAlertCancel').style.display = 'inline-block';
+            document.getElementById('customAlertOverlay').classList.add('show');
+            setTimeout(() => input.focus(), 100);
+            customAlertCallback = () => {
+                const val = input.value.trim();
+                if (val) onOk(val);
+            };
+            // Allow Enter key to confirm
+            input.onkeydown = (e) => { if (e.key === 'Enter') confirmCustomAlert(); };
+        }
+        function closeCustomAlert() {
+            document.getElementById('customAlertOverlay').classList.remove('show');
+            document.getElementById('customAlertInput').style.display = 'none';
+            customAlertCallback = null;
+        }
+        function confirmCustomAlert() {
+            document.getElementById('customAlertOverlay').classList.remove('show');
+            document.getElementById('customAlertInput').style.display = 'none';
+            if (customAlertCallback) customAlertCallback();
+            customAlertCallback = null;
+        }
 
         // Translations
         const translations = {
@@ -1450,7 +1550,7 @@
             const select = document.getElementById('savedPlayerSelect');
             const name = select.value;
             if (!name) {
-                alert(t('selectPlayerToLoad'));
+                showAlert(t('selectPlayerToLoad'));
                 return;
             }
 
@@ -1480,33 +1580,37 @@
             const select = document.getElementById('savedPlayerSelect');
             const name = select.value;
             if (!name) {
-                alert(t('selectPlayerToDelete'));
+                showAlert(t('selectPlayerToDelete'));
                 return;
             }
-            if (!confirm(`${t('confirmDelete')} "${name}"?`)) return;
-
-            const players = loadSavedPlayers();
-            delete players[name];
-            writeSavedPlayers(players);
-
-            if (currentPlayerName === name) {
-                currentPlayerName = null;
-                updateActivePlayerBadge();
-            }
-            renderSavedPlayersList();
+            showConfirm(`${t('confirmDelete')} "${name}"?`, () => {
+                const players = loadSavedPlayers();
+                delete players[name];
+                writeSavedPlayers(players);
+                if (currentPlayerName === name) {
+                    currentPlayerName = null;
+                    updateActivePlayerBadge();
+                }
+                renderSavedPlayersList();
+            });
         }
 
         function onSavePlayer() {
             if (!selectedRole || Object.keys(playerStats).length === 0) {
-                alert(t('noPlayerToSave'));
+                showAlert(t('noPlayerToSave'));
                 return;
             }
 
             let name = currentPlayerName;
             if (!name) {
-                name = prompt(t('savePlayerPrompt'));
-                if (!name || !name.trim()) return;
-                name = name.trim();
+                showPrompt(t('savePlayerPrompt'), (val) => {
+                    savePlayerData(val);
+                    currentPlayerName = val;
+                    updateActivePlayerBadge();
+                    renderSavedPlayersList();
+                    flashSaveButton(t('playerSaved'));
+                });
+                return;
             }
 
             savePlayerData(name);
@@ -1625,7 +1729,7 @@
                 document.getElementById('selectedRoleBox').classList.add('show');
                 document.getElementById('selectedRoleText').textContent = matchedRole;
             } else {
-                const label = currentLang === 'he' ? 'בחור: ' : 'Selected: ';
+                const label = currentLang === 'he' ? 'נבחר: ' : 'Selected: ';
                 status.textContent = label + pitchSelected.join(' + ');
                 status.className = 'pitch-status invalid';
                 selectedRole = null;
@@ -1688,7 +1792,15 @@
 
         function continueToAttributes() {
             if (!selectedRole) {
-                alert(currentLang === 'he' ? '⚠️ אנא בחר תפקיד תחילה!\n\nלחץ על אחד מכפתורי התפקיד (כמו ST, GK, DC וכו\') כדי לבחור אותו.' : '⚠️ Please select a role first!\n\nTap on one of the role buttons (like ST, GK, DC, etc.) to select it.');
+                if (pitchSelected.length === 0) {
+                    showAlert(currentLang === 'he'
+                        ? '⚠️ אנא בחר תפקיד תחילה!\n\nלחץ על עמדה במגרש כדי לבחור אותה.'
+                        : '⚠️ Please select a role first!\n\nTap a position on the pitch to select it.');
+                } else {
+                    showAlert(currentLang === 'he'
+                        ? '⚠️ השילוב שבחרת אינו תקין!\n\nבחר עמדה אחת בלבד, או שילוב תקין של עמדות.'
+                        : '⚠️ Invalid combination!\n\nSelect a single position or a valid combination.');
+                }
                 return;
             }
 
@@ -1766,7 +1878,7 @@
             attributes.forEach(attr => {
                 const value = parseInt(document.getElementById(`attr_${attr}`).value);
                 if (isNaN(value) || value < 0) {
-                    alert((currentLang === 'he' ? 'אנא הזן ערך חוקי עבור ' : 'Please enter a valid value for ') + t('attrs.' + attr));
+                    showAlert((currentLang === 'he' ? 'אנא הזן ערך חוקי עבור ' : 'Please enter a valid value for ') + t('attrs.' + attr));
                     hasError = true;
                     return;
                 }
@@ -2331,7 +2443,7 @@
                     flashSaveButton(t('playerAutoSaved'));
                 }
             } else {
-                alert(currentLang === 'he' ? 'לא בוצעו שינויים. הזן לפחות ערך חדש אחד או שנה דרגה.' : 'No changes made. Enter at least one new value or change tier.');
+                showAlert(currentLang === 'he' ? 'לא בוצעו שינויים. הזן לפחות ערך חדש אחד או שנה דרגה.' : 'No changes made. Enter at least one new value or change tier.');
             }
         }
 
